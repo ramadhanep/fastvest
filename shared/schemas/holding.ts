@@ -8,6 +8,7 @@ export const holdingSchema = z.object({
   currency: z.string().optional().default('USD'),
   notes: z.string().optional(),
   createdAt: z.string().datetime().optional(),
+  isCash: z.boolean().optional().default(false),
 })
 
 export const portfolioFileSchema = z.object({

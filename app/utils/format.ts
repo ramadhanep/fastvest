@@ -14,6 +14,11 @@ export function formatCurrency(value: number | undefined | null, currency = 'USD
   const abs = Math.abs(value)
   const symbol = currencySymbol[currency] ?? ''
 
+  // Special rounding for IDR (round up, no decimals)
+  if (currency === 'IDR') {
+    return `${negative ? '-' : ''}${symbol}${Math.round(abs).toLocaleString('en-US')}`
+  }
+
   return `${negative ? '-' : ''}${symbol}${abs.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

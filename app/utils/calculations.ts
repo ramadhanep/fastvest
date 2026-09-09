@@ -3,6 +3,20 @@ import type { Holding, HoldingMetrics, PortfolioSummary, Quote } from '#shared/t
 const DAY_MS = 24 * 60 * 60 * 1000
 
 export function calculateHoldingMetrics(holding: Holding, quote: Quote | null | undefined): HoldingMetrics {
+  // If explicitly marked as cash or symbol starts with "CASH-"
+  if (holding.isCash || holding.symbol.startsWith('CASH-')) {
+    const marketValue = holding.quantity // quantity represents cash amount
+    const costBasis = holding.quantity
+    return {
+      marketValue,
+      costBasis,
+      pnl: 0,
+      pnlPercent: 0,
+      dayChange: 0,
+      dayChangePercent: 0,
+    }
+  }
+
   const price = quote?.price ?? 0
   const marketValue = holding.quantity * price
   const costBasis = holding.quantity * holding.averageCost

@@ -8,6 +8,7 @@ export interface Holding {
   currency?: string
   notes?: string
   createdAt: string
+  isCash?: boolean // added
 }
 
 export interface Quote {

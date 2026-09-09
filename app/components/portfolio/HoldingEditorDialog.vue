@@ -39,6 +39,7 @@ const quantity = ref('')
 const averageCost = ref('')
 const currency = ref('USD')
 const notes = ref('')
+const isCash = ref(false) // new cash flag
 const submitting = ref(false)
 const qtyError = ref('')
 const costError = ref('')
@@ -82,6 +83,7 @@ watch(
       averageCost.value = String(props.holding.averageCost)
       currency.value = props.holding.currency ?? (props.holding.symbol.endsWith('.JK') ? 'IDR' : 'USD')
       notes.value = props.holding.notes ?? ''
+      isCash.value = props.holding.isCash ?? false
       step.value = 'form'
       manualSymbol.value = props.holding.symbol
       quotes.refresh([props.holding.symbol])
@@ -93,6 +95,7 @@ watch(
       averageCost.value = ''
       currency.value = 'USD'
       notes.value = ''
+      isCash.value = false
       step.value = 'symbol'
       activeCategory.value = 'popular'
     }
@@ -177,9 +180,10 @@ async function save() {
     const parsed = holdingSchema.omit({ id: true, createdAt: true }).parse({
       symbol: selectedSymbol.value,
       quantity: Number(quantity.value),
-      averageCost: Number(averageCost.value),
+      averageCost: isCash.value ? 1 : Number(averageCost.value),
       currency: currency.value,
       notes: notes.value || undefined,
+      isCash: isCash.value,
     })
 
     if (isEdit.value && props.holding) {
@@ -392,11 +396,22 @@ async function save() {
         </div>
 
         <form class="space-y-4 mt-3" @submit.prevent="save">
-          <!-- Quantity -->
+          <!-- Count as Cash Checkbox -->
+          <div class="flex items-center gap-2 px-1">
+            <input
+              id="fv-is-cash"
+              v-model="isCash"
+              type="checkbox"
+              class="size-4 rounded border-border/70 text-foreground focus:ring-ring"
+            />
+            <UiLabel for="fv-is-cash" class="text-xs font-medium cursor-pointer">Count as Cash / Stablecoin</UiLabel>
+          </div>
+
+          <!-- Quantity / Amount -->
           <div>
             <div class="flex items-center justify-between">
-              <UiLabel for="fv-qty" class="text-xs font-medium">Quantity</UiLabel>
-              <div class="flex items-center gap-1">
+              <UiLabel for="fv-qty" class="text-xs font-medium">{{ isCash ? 'Amount' : 'Quantity' }}</UiLabel>
+              <div v-if="!isCash" class="flex items-center gap-1">
                 <button
                   v-for="delta in (selectedSymbol.endsWith('.JK') ? [100, 500, 1000] : [1, 5, 10, 50])"
                   :key="delta"
@@ -424,8 +439,8 @@ async function save() {
             </p>
           </div>
 
-          <!-- Average Cost -->
-          <div>
+          <!-- Average Cost (hide if cash) -->
+          <div v-if="!isCash">
             <UiLabel for="fv-cost" class="text-xs font-medium">Average Cost</UiLabel>
             <UiInput
               id="fv-cost"
@@ -444,10 +459,7 @@ async function save() {
           </div>
 
           <!-- Estimated Total -->
-          <div
-            v-if="estimatedTotal > 0"
-            class="rounded-xl border border-border/60 bg-muted/30 p-2.5 flex items-center justify-between text-xs"
-          >
+          <div v-if="estimatedTotal > 0 && !isCash" class="rounded-xl border border-border/60 bg-muted/30 p-2.5 flex items-center justify-between text-xs">
             <span class="text-muted-foreground">Est. Investment</span>
             <span class="font-semibold tabular-nums text-foreground">
               {{ formatCurrency(estimatedTotal, currency) }}
