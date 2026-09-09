@@ -20,11 +20,14 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { prerender: true },
   },
-  modules: [
-    '@nuxtjs/color-mode',
-    '@vueuse/nuxt',
-    '@vite-pwa/nuxt',
-  ],
+  modules: ['@nuxtjs/color-mode', '@vueuse/nuxt', '@vite-pwa/nuxt', '@nuxt/fonts'],
+  fonts: {
+    provider: 'google',
+    families: [
+      { name: 'Geist', weights: [400, 500, 600, 700, 800] },
+      { name: 'Newsreader', weights: [400, 500, 600, 700], styles: ['normal'] },
+    ],
+  },
   vite: {
     plugins: [tailwindcss()],
   },

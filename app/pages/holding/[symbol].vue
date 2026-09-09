@@ -128,12 +128,12 @@ onMounted(ensureRates)
         </div>
         <div class="text-right flex items-center gap-2">
           <div>
-            <div v-if="quote" class="text-lg font-semibold tabular-nums">
+            <div v-if="quote" class="font-display text-[1.75rem] font-semibold tabular-nums leading-none">
               {{ formatCurrency(quote.price, quote.currency ?? 'USD') }}
             </div>
             <div
               v-if="quote && quote.changePercent !== undefined"
-              class="text-xs font-medium tabular-nums"
+              class="text-xs font-medium tabular-nums mt-1"
               :class="quote.changePercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
             >
               {{ quote.changePercent >= 0 ? '+' : '' }}{{ formatPercent(quote.changePercent) }}

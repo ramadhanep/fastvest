@@ -41,7 +41,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
 
     <!-- Main Value -->
     <div class="mt-1">
-      <h2 class="text-[2rem] font-semibold tracking-tight tabular-nums text-foreground leading-none">
+      <h2 class="font-display text-[2.25rem] font-semibold tracking-tight tabular-nums text-foreground leading-none">
         <template v-if="showBalance">
           {{ formatCurrency(summary.totalValue, currency) }}
         </template>

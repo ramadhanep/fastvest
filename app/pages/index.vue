@@ -210,7 +210,7 @@ onMounted(() => {
     </div>
 
     <!-- Status footer -->
-    <div class="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-4 text-[11px] text-muted-foreground">
+    <div class="mt-8 px-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-4 text-[11px] text-muted-foreground">
       <span v-if="lastUpdated">Updated {{ formatTimeAgo(lastUpdated) }}</span>
       <span v-if="!online">Offline · cached prices</span>
       <span>{{ hasQuotes ? 'Quotes via Yahoo Finance' : 'Refresh to see quotes' }}</span>
