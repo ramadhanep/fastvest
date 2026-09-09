@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ChevronDown } from '@lucide/vue'
+import { ChevronDown, Pencil, Trash2 } from '@lucide/vue'
 import type { Holding, Quote, SortKey } from '#shared/types'
 import { calculateHoldingMetrics } from '~/utils/calculations'
 import { formatCurrency, formatNumber, formatPercent, formatQuantity } from '~/utils/format'
@@ -30,8 +30,7 @@ function openDetail(h: Holding) {
 const sortKey = ref<SortKey>('weight')
 const sortDir = ref<'asc' | 'desc'>('desc')
 const filterStatus = ref<'all' | 'gain' | 'loss'>('all')
-const sheetHolding = ref<Holding | null>(null)
-const longPressTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const swipedId = ref<string | null>(null)
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'weight', label: 'Portfolio Weight' },
@@ -91,25 +90,47 @@ function sortLabel(key: SortKey) {
   return opt ? opt.label : ''
 }
 
-function onPressStart(h: Holding) {
-  longPressTimer.value = setTimeout(() => {
-    sheetHolding.value = h
-  }, 400)
+let touchStartX = 0
+let touchStartY = 0
+let swiping = false
+
+function onRowTouchStart(e: TouchEvent, id: string) {
+  if (swipedId.value && swipedId.value !== id) { swipedId.value = null }
+  const t = e.touches[0]
+  if (!t) return
+  touchStartX = t.clientX
+  touchStartY = t.clientY
+  swiping = false
 }
 
-function onPressEnd() {
-  if (longPressTimer.value) {
-    clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
+function onRowTouchMove(e: TouchEvent) {
+  const t = e.touches[0]
+  if (!t) return
+  const dx = t.clientX - touchStartX
+  const dy = t.clientY - touchStartY
+  if (!swiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+    swiping = true
   }
 }
 
-function openSheet(h: Holding) {
-  sheetHolding.value = h
+function onRowTouchEnd(e: TouchEvent, h: Holding) {
+  const t = e.changedTouches[0]
+  if (!t) { swiping = false; return }
+  const dx = t.clientX - touchStartX
+  if (swiping && dx < -50) {
+    swipedId.value = h.id
+  } else if (!swiping || Math.abs(dx) < 10) {
+    if (swipedId.value === h.id) { swipedId.value = null }
+    else { openDetail(h) }
+  } else {
+    swipedId.value = null
+  }
+  swiping = false
 }
 
-function closeSheet() {
-  sheetHolding.value = null
+function onRowClick(h: Holding) {
+  if (swipedId.value) { swipedId.value = null; return }
+  openDetail(h)
 }
 </script>
 
@@ -156,27 +177,41 @@ function closeSheet() {
     </div>
 
     <!-- Holdings List -->
-    <div class="mt-3 rounded-2xl bg-card divide-y divide-border/30 overflow-hidden">
+    <div class="mt-3 -mx-4 sm:mx-0 rounded-none sm:rounded-2xl bg-card divide-y divide-border/30 overflow-hidden">
       <div
         v-for="row in rows"
         :key="row.holding.id"
-        class="group flex items-center justify-between gap-3 px-4 py-3.5 active:bg-muted/30 transition-colors"
+        class="relative overflow-hidden"
         :class="{ 'bg-muted/15': filtering === row.holding.symbol }"
       >
-        <!-- Tappable holding card -->
-        <button
-          type="button"
-          class="min-w-0 flex-1 flex items-center justify-between gap-3 text-left cursor-pointer"
-          @click="openDetail(row.holding)"
-          @touchstart.passive="onPressStart(row.holding)"
-          @touchend="onPressEnd"
-          @touchcancel="onPressEnd"
-          @mousedown="onPressStart(row.holding)"
-          @mouseup="onPressEnd"
-          @mouseleave="onPressEnd"
-          @contextmenu.prevent="openSheet(row.holding)"
+        <!-- Action buttons (revealed on swipe) -->
+        <div class="absolute inset-y-0 right-0 flex items-center">
+          <button
+            type="button"
+            class="h-full px-5 flex items-center justify-center bg-muted/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            @click.stop="emit('edit', row.holding); swipedId = null"
+          >
+            <Pencil class="size-4" />
+          </button>
+          <button
+            type="button"
+            class="h-full px-5 flex items-center justify-center bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:bg-rose-500/25 transition-colors cursor-pointer"
+            @click.stop="emit('remove', row.holding); swipedId = null"
+          >
+            <Trash2 class="size-4" />
+          </button>
+        </div>
+
+        <!-- Swipeable card content -->
+        <div
+          class="relative flex items-center justify-between gap-3 px-4 py-3.5 bg-card transition-transform duration-200 ease-out will-change-transform"
+          :style="{ transform: `translateX(${swipedId === row.holding.id ? '-120px' : '0'})` }"
+          @click="onRowClick(row.holding)"
+          @touchstart.passive="onRowTouchStart($event, row.holding.id)"
+          @touchmove.passive="onRowTouchMove"
+          @touchend="onRowTouchEnd($event, row.holding)"
         >
-          <div class="flex items-center gap-3 min-w-0">
+          <div class="flex items-center gap-3 min-w-0 flex-1">
             <AssetIcon :symbol="row.holding.symbol" size="md" />
 
             <div class="min-w-0">
@@ -224,33 +259,8 @@ function closeSheet() {
               <template v-else>—</template>
             </p>
           </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Mobile Action Sheet -->
-    <UiActionSheet :open="!!sheetHolding" @close="closeSheet">
-      <div class="px-5 pt-4 pb-2" v-if="sheetHolding">
-        <div class="flex items-center gap-2.5">
-          <AssetIcon :symbol="sheetHolding.symbol" size="md" />
-          <div>
-            <p class="text-sm font-semibold">{{ sheetHolding.symbol }}</p>
-            <p class="text-[11px] text-muted-foreground">{{ sheetHolding.notes ?? formatQuantity(sheetHolding.quantity) + ' shares' }}</p>
-          </div>
         </div>
       </div>
-      <div class="divide-y divide-border/40">
-        <UiActionSheetItem @click="openDetail(sheetHolding!); closeSheet()">
-          View Details
-        </UiActionSheetItem>
-        <UiActionSheetItem @click="emit('edit', sheetHolding!); closeSheet()">
-          Edit Position
-        </UiActionSheetItem>
-        <UiActionSheetItem destructive @click="emit('remove', sheetHolding!); closeSheet()">
-          Delete
-        </UiActionSheetItem>
-      </div>
-      <UiActionSheetCancel @click="closeSheet" />
-    </UiActionSheet>
+    </div>
   </section>
 </template>

@@ -126,13 +126,13 @@ onMounted(() => {
 
 <template>
   <!-- Empty State if no holdings -->
-  <div v-if="!holdings.length && !storageError" class="mt-4">
+  <div v-if="!holdings.length && !storageError" class="mt-4 px-4 sm:px-0">
     <EmptyState @add="openAdd" @load-demo="loadDemoPortfolio" />
   </div>
 
   <template v-else>
     <!-- Storage error banner -->
-    <div v-if="storageError" class="mt-4">
+    <div v-if="storageError" class="mt-4 px-4 sm:px-0">
       <div class="rounded-3xl border border-border/70 bg-card p-5">
         <div class="flex items-start gap-3">
           <AlertCircle class="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
@@ -156,7 +156,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="space-y-4 sm:space-y-5">
+    <div class="space-y-4 sm:space-y-5 px-4 sm:px-0">
       <!-- Demo Portfolio Banner -->
       <DemoPortfolioBanner
         v-if="isDemoPortfolio && !isDemoDismissed"

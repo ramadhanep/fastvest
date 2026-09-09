@@ -101,7 +101,11 @@ const accent = computed(() => brandColorFor(holding.value?.symbol ?? ''))
 const accentStyle = computed(() => {
   const hex = accent.value
   if (!hex) return {}
-  return { backgroundColor: `${hex}1f` }
+  return {
+    backgroundColor: `${hex}30`,
+    borderColor: `${hex}40`,
+    border: `1px solid ${hex}40`,
+  }
 })
 
 const editorOpen = ref(false)
@@ -109,7 +113,7 @@ onMounted(ensureRates)
 </script>
 
 <template>
-  <div v-if="holding" class="pb-12">
+  <div v-if="holding" class="pb-12 px-4 sm:px-0">
     <!-- Header card -->
     <div class="mt-2 rounded-2xl p-5 backdrop-blur-xl transition-all" :style="accentStyle">
       <div class="flex items-center justify-between">

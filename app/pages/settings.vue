@@ -80,7 +80,7 @@ function formatBytes(bytes: number) {
 </script>
 
 <template>
-  <div class="space-y-6 pb-12">
+  <div class="space-y-6 pb-12 px-4 sm:px-0">
     <!-- Appearance -->
     <section aria-labelledby="appearance-heading">
       <h2 id="appearance-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Appearance</h2>

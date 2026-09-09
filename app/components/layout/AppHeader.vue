@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Settings, RefreshCw, Sun, Moon, ArrowLeft } from '@lucide/vue'
+import { Settings, Sun, Moon, ArrowLeft } from '@lucide/vue'
 
 const props = withDefaults(
   defineProps<{
@@ -13,10 +13,6 @@ const props = withDefaults(
     brandColor: null,
   },
 )
-
-const emit = defineEmits<{
-  refresh: []
-}>()
 
 const route = useRoute()
 const isSettings = computed(() => route.path === '/settings')
@@ -69,17 +65,6 @@ const glassStyle = computed(() =>
 
         <!-- Right: Actions -->
         <div class="flex items-center gap-1">
-          <button
-            type="button"
-            class="rounded-full bg-white/50 dark:bg-white/10 size-12 shrink-0 inline-flex items-center justify-center cursor-pointer ios-press transition-colors hover:bg-white/70 dark:hover:bg-white/20 text-muted-foreground hover:text-foreground"
-            :class="{ 'text-foreground': refreshing }"
-            aria-label="Refresh quotes"
-            :disabled="refreshing"
-            @click="emit('refresh')"
-          >
-            <RefreshCw class="size-4" :class="{ 'animate-spin': refreshing }" />
-          </button>
-
           <NuxtLink
             v-if="!isSettings"
             to="/settings"
