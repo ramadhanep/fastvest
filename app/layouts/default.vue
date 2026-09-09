@@ -3,7 +3,7 @@
     <AppHeader
       :refreshing="refreshing"
       :back-to="isDetail ? '/' : undefined"
-      :brand-color="detailBrandColor"
+      :brand-color="headerBrandColor"
     />
     <OfflineIndicator />
 
@@ -41,34 +41,32 @@
     </main>
 
     <!-- Animated FAB (only on home page) -->
-    <!-- Full-width bar when scrolled up or at top; compact pill when scrolling down -->
+    <!-- Slides down when scrolling down, slides back up when scrolling up — GPU-composited 60fps -->
     <Transition name="fab-fade">
       <div
         v-if="isHome"
-        class="fixed bottom-0 inset-x-0 z-40 flex items-end justify-center pb-6 px-4 pointer-events-none"
+        class="fixed bottom-0 inset-x-0 z-40 flex items-end justify-center px-4 pointer-events-none"
         style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem))"
       >
         <div
-          class="pointer-events-auto fab-container"
-          :class="fabExpanded ? 'fab-expanded' : 'fab-collapsed'"
+          class="w-full max-w-md pointer-events-auto fab-slide"
+          :class="{ 'fab-slide--hidden': !fabVisible }"
         >
-          <button
-            type="button"
-            class="fab-button ios-press"
-            :class="fabExpanded ? 'fab-button-expanded' : 'fab-button-collapsed'"
-            :aria-label="fabExpanded ? 'Add Portfolio' : 'Add Holding'"
-            @click="addModal.open"
+          <!-- Liquid glass container — mirrors AppHeader outer div exactly -->
+          <div
+            class="w-full rounded-[1.75rem] bg-white/40 dark:bg-white/[0.06] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden p-1.5 transition-[background-color] duration-500 ease-out"
+            :style="glassStyle"
           >
-            <!-- Icon always visible -->
-            <Plus class="fab-icon shrink-0" :class="fabExpanded ? 'size-5' : 'size-5.5'" />
-            <!-- Label only in expanded state -->
-            <span
-              class="fab-label font-medium tracking-tight"
-              :class="fabExpanded ? 'fab-label-visible' : 'fab-label-hidden'"
+            <button
+              type="button"
+              aria-label="Add Portfolio"
+              class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-white/50 dark:bg-white/10 h-12 px-5 text-sm font-medium text-foreground/80 backdrop-blur-xl cursor-pointer ios-press hover:bg-white/70 dark:hover:bg-white/20 transition-colors"
+              @click="addModal.open"
             >
-              Add Portfolio
-            </span>
-          </button>
+              <Plus class="size-4 shrink-0" />
+              <span class="fab-label font-medium tracking-tight">Add Portfolio</span>
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -85,9 +83,41 @@ const addModal = useAddHoldingModal()
 const route = useRoute()
 const isHome = computed(() => route.path === '/')
 const isDetail = computed(() => route.path.startsWith('/holding/'))
-const detailBrandColor = computed<string | null>(() =>
-  isDetail.value ? brandColorFor(String(route.params.symbol ?? '')) ?? null : null,
+
+// ─── Shared random portfolio color ───────────────────────────────────────────
+// Picked once when holdings load/change, stable for the session so both
+// AppHeader and FAB always show the same tint simultaneously.
+const randomPortfolioColor = ref<string | null>(null)
+
+watch(
+  holdings,
+  (newHoldings) => {
+    const colors = newHoldings
+      .map((h) => brandColorFor(h.symbol))
+      .filter(Boolean) as string[]
+    randomPortfolioColor.value = colors.length
+      ? (colors[Math.floor(Math.random() * colors.length)] ?? null)
+      : null
+  },
+  { immediate: true },
 )
+
+// Glass tint style shared by both FAB container and AppHeader (via prop)
+const glassStyle = computed(() =>
+  randomPortfolioColor.value
+    ? { backgroundColor: `${randomPortfolioColor.value}22` }
+    : {},
+)
+
+// AppHeader brand-color:
+//   - home page  → same random portfolio color as FAB
+//   - detail page → the specific holding's brand color
+//   - other pages → null (no tint)
+const headerBrandColor = computed<string | null>(() => {
+  if (isDetail.value) return brandColorFor(String(route.params.symbol ?? '')) ?? null
+  if (isHome.value) return randomPortfolioColor.value
+  return null
+})
 
 const mainEl = ref<HTMLElement | null>(null)
 const pullY = ref(0)
@@ -101,19 +131,18 @@ const pullReady = computed(() => pullY.value >= PULL_THRESHOLD && !refreshing.va
 const pullIndicatorHeight = computed(() => Math.min(pullY.value, MAX_PULL))
 const pullIndicatorOpacity = computed(() => Math.min(pullY.value / PULL_THRESHOLD, 1))
 
-// ─── Animated FAB scroll logic ───────────────────────────────────────────────
-// fabExpanded = true  → full-width pill (at top or scrolling up)
-// fabExpanded = false → compact round button (scrolling down)
+// ─── FAB scroll hide/show via translateY ─────────────────────────────────────
+// Slides out to the bottom when scrolling down, slides back in from the bottom
+// when scrolling up. Pure transform — GPU composited, 60fps.
 
-const fabExpanded = ref(true)
-
+const fabVisible = ref(true)
 let lastScrollY = 0
 let scrollTicking = false
-let accumulatedDown = 0   // accumulated downward movement
-let accumulatedUp = 0     // accumulated upward movement
+let accumulatedDown = 0
+let accumulatedUp = 0
 
-const COLLAPSE_AFTER = 60  // px scrolled down to collapse
-const EXPAND_AFTER = 30    // px scrolled up to expand
+const COLLAPSE_AFTER = 70 // px down before hiding
+const EXPAND_AFTER   = 35 // px up before showing
 
 function onWindowScroll() {
   if (scrollTicking) return
@@ -123,24 +152,21 @@ function onWindowScroll() {
     const delta = currentY - lastScrollY
 
     if (currentY <= 0) {
-      // At very top — always expand
-      fabExpanded.value = true
+      fabVisible.value = true
       accumulatedDown = 0
       accumulatedUp = 0
     } else if (delta > 0) {
-      // Scrolling down
       accumulatedDown += delta
       accumulatedUp = 0
       if (accumulatedDown >= COLLAPSE_AFTER) {
-        fabExpanded.value = false
+        fabVisible.value = false
         accumulatedDown = 0
       }
     } else if (delta < 0) {
-      // Scrolling up
       accumulatedUp += Math.abs(delta)
       accumulatedDown = 0
       if (accumulatedUp >= EXPAND_AFTER) {
-        fabExpanded.value = true
+        fabVisible.value = true
         accumulatedUp = 0
       }
     }
@@ -195,113 +221,37 @@ function onTouchEnd() {
 </script>
 
 <style scoped>
-/* ── FAB container ───────────────────────────────────── */
-.fab-container {
-  transition:
-    max-width 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    border-radius 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  will-change: max-width, border-radius;
+/* ── FAB slide wrapper ───────────────────────────────────
+   GPU-composited translateY transition for 60fps hide/show.
+   will-change: transform tells the browser to promote this
+   layer ahead of time so the animation never drops frames. */
+.fab-slide {
+  will-change: transform;
+  transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.fab-expanded {
-  max-width: 28rem; /* matches max-w-md */
-  width: 100%;
-  border-radius: 9999px;
-}
-
-.fab-collapsed {
-  max-width: 52px;
-  width: 52px;
-  border-radius: 9999px;
-  /* Shift to right side */
-  margin-left: auto;
-}
-
-/* ── FAB button ──────────────────────────────────────── */
-.fab-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  cursor: pointer;
-  background: var(--foreground);
-  color: var(--background);
-  border: none;
-  outline: none;
-  overflow: hidden;
-  /* shadow */
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.18),
-    0 1px 4px rgba(0, 0, 0, 0.10);
-  transition:
-    height 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    border-radius 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 300ms ease,
-    opacity 200ms ease;
-  will-change: height, border-radius;
-}
-
-.fab-button-expanded {
-  height: 52px;
-  border-radius: 9999px;
-  gap: 0.5rem;
-  padding: 0 1.5rem;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.22),
-    0 2px 8px rgba(0, 0, 0, 0.12);
-}
-
-.fab-button-collapsed {
-  height: 52px;
-  border-radius: 9999px;
-  gap: 0;
-  padding: 0;
-}
-
-.fab-button:active {
-  opacity: 0.85;
-  transform: scale(0.97);
-}
-
-/* ── FAB icon ────────────────────────────────────────── */
-.fab-icon {
-  transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  flex-shrink: 0;
+.fab-slide--hidden {
+  /* Slide out: move down by 100% of own height + safe-area + padding so it
+     fully disappears below the viewport edge */
+  transform: translateY(calc(100% + max(2rem, env(safe-area-inset-bottom, 2rem))));
+  pointer-events: none;
 }
 
 /* ── FAB label ───────────────────────────────────────── */
 .fab-label {
   font-size: 0.9375rem; /* 15px */
   white-space: nowrap;
-  overflow: hidden;
-  transition:
-    max-width 380ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 280ms ease,
-    margin-left 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  will-change: max-width, opacity;
 }
 
-.fab-label-visible {
-  max-width: 200px;
-  opacity: 1;
-}
-
-.fab-label-hidden {
-  max-width: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* ── Fade in/out the entire FAB wrapper ─────────────── */
+/* ── Page-entry fade-up (route enter/leave) ──────────── */
 .fab-fade-enter-active,
 .fab-fade-leave-active {
-  transition: opacity 300ms ease, transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: opacity 300ms ease, transform 300ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
 .fab-fade-enter-from,
 .fab-fade-leave-to {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(16px);
 }
 </style>
-
