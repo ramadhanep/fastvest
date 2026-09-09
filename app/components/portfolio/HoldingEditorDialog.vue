@@ -144,6 +144,13 @@ function back() {
   step.value = 'symbol'
 }
 
+function sanitizeDecimal(raw: string): string {
+  const cleaned = String(raw).replace(/,/g, '.').replace(/[^0-9.]/g, '')
+  const dotIndex = cleaned.indexOf('.')
+  if (dotIndex === -1) return cleaned
+  return `${cleaned.slice(0, dotIndex)}.${cleaned.slice(dotIndex + 1).replace(/\./g, '')}`
+}
+
 function addQty(delta: number) {
   const current = Number(quantity.value) || 0
   quantity.value = String(Math.max(0, current + delta))
@@ -425,14 +432,13 @@ async function save() {
             </div>
             <UiInput
               id="fv-qty"
-              v-model="quantity"
-              type="number"
+              :model-value="quantity"
+              type="text"
               inputmode="decimal"
-              step="any"
-              min="0.00000001"
               placeholder="e.g. 10"
               class="mt-1.5 h-10 rounded-xl"
               :aria-describedby="qtyError ? 'fv-qty-err' : undefined"
+              @update:model-value="quantity = sanitizeDecimal(String($event))"
             />
             <p v-if="qtyError" id="fv-qty-err" class="mt-1 text-xs text-destructive font-medium">
               {{ qtyError }}
@@ -444,14 +450,13 @@ async function save() {
             <UiLabel for="fv-cost" class="text-xs font-medium">Average Cost</UiLabel>
             <UiInput
               id="fv-cost"
-              v-model="averageCost"
-              type="number"
+              :model-value="averageCost"
+              type="text"
               inputmode="decimal"
-              step="any"
-              min="0"
               placeholder="e.g. 150.25"
               class="mt-1.5 h-10 rounded-xl"
               :aria-describedby="costError ? 'fv-cost-err' : undefined"
+              @update:model-value="averageCost = sanitizeDecimal(String($event))"
             />
             <p v-if="costError" id="fv-cost-err" class="mt-1 text-xs text-destructive font-medium">
               {{ costError }}
