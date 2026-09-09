@@ -23,7 +23,7 @@ const { refresh, getQuote, errors, lastUpdated, refreshing } = quotes
 const addModal = useAddHoldingModal()
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 
-useHead({ title: 'fastvest · Portfolio Tracker' })
+useHead({ title: 'Fastvest · Portfolio Tracker' })
 
 const editorOpen = ref(false)
 const editingHolding = ref<Holding | null>(null)

@@ -55,7 +55,7 @@ const glassStyle = computed(() =>
         >
           <img
             src="/pwa-192x192.png"
-            alt="fastvest"
+            alt="Fastvest"
             width="32"
             height="32"
             class="size-8 rounded-full object-cover shrink-0"

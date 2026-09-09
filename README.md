@@ -1,8 +1,8 @@
-# fastvest
+# Fastvest
 
-**Fast, local-first portfolio tracker.** fastvest lets you monitor your investment portfolio with live market prices from Yahoo Finance — without an account, without a database, and without sending your portfolio anywhere.
+**Fast, local-first portfolio tracker.** Fastvest lets you monitor your investment portfolio with live market prices from Yahoo Finance — without an account, without a database, and without sending your portfolio anywhere.
 
-fastvest stores portfolio data locally in the user's browser and does not require an account. Open the app, see your portfolio value and P&L, glance at your holdings, refresh prices quietly, close.
+Fastvest stores portfolio data locally in the user's browser and does not require an account. Open the app, see your portfolio value and P&L, glance at your holdings, refresh prices quietly, close.
 
 ## Features
 
@@ -22,10 +22,10 @@ fastvest stores portfolio data locally in the user's browser and does not requir
 
 ## Privacy model
 
-fastvest is local-first by design:
+Fastvest is local-first by design:
 
 - Portfolio configuration and preferences live **only in your browser** (localStorage).
-- Market data requests go **server-side** through fastvest's Nitro API routes, which call `yahoo-finance2`.
+- Market data requests go **server-side** through Fastvest's Nitro API routes, which call `yahoo-finance2`.
 - Your portfolio contents are **never** persisted server-side, logged, or sent to analytics.
 - Clearing browser storage deletes your local portfolio unless you exported a backup.
 
@@ -71,7 +71,7 @@ npm run build
 npm run preview
 ```
 
-fastvest is installable and its app shell loads offline. Live market data does not work fully offline; cached prices remain visible.
+Fastvest is installable and its app shell loads offline. Live market data does not work fully offline; cached prices remain visible.
 
 ## Architecture
 
@@ -103,7 +103,7 @@ Key areas:
 
 ### Is this financial advice?
 
-No. **fastvest is a portfolio monitoring tool, not financial advice.** Market data is provided through Yahoo Finance and may be delayed, incomplete, or unavailable. Verify important information with your broker or other authoritative sources.
+No. **Fastvest is a portfolio monitoring tool, not financial advice.** Market data is provided through Yahoo Finance and may be delayed, incomplete, or unavailable. Verify important information with your broker or other authoritative sources.
 
 ### Do I need an account?
 
@@ -115,7 +115,7 @@ In your browser's localStorage. Export a `fastvest-portfolio.json` backup from S
 
 ### Why aren't my prices updating?
 
-Market data can be temporarily unavailable (Yahoo Finance has no official API). fastvest keeps your last cached prices visible and lets you retry.
+Market data can be temporarily unavailable (Yahoo Finance has no official API). Fastvest keeps your last cached prices visible and lets you retry.
 
 ## Contributing
 

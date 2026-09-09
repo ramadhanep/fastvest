@@ -177,7 +177,7 @@ export function usePortfolio() {
           const raw = JSON.parse(String(reader.result))
           const parsed = portfolioFileSchema.safeParse(raw)
           if (!parsed.success) {
-            resolve({ ok: false, message: 'That file is not a valid fastvest portfolio.' })
+            resolve({ ok: false, message: 'That file is not a valid Fastvest portfolio.' })
             return
           }
           holdings.value = structuredClone(parsed.data.holdings).map((h) => ({

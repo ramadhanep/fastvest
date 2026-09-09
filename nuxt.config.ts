@@ -17,7 +17,7 @@ export default defineNuxtConfig({
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-        { name: 'apple-mobile-web-app-title', content: 'fastvest' },
+        { name: 'apple-mobile-web-app-title', content: 'Fastvest' },
       ],
     },
   },
@@ -60,8 +60,8 @@ export default defineNuxtConfig({
   },
   pwa: {
     manifest: {
-      name: 'fastvest',
-      short_name: 'fastvest',
+      name: 'Fastvest',
+      short_name: 'Fastvest',
       description: 'Fast, local-first portfolio tracker with live market prices.',
       lang: 'en',
       theme_color: '#0a0a0b',

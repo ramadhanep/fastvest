@@ -80,7 +80,7 @@ test.describe('Data flows', () => {
       buffer: Buffer.from('{ "version": 99, "holdings": [] }'),
     })
     await page.getByRole('button', { name: 'Import' }).click()
-    await expect(page.getByText(/not a valid fastvest portfolio/)).toBeVisible()
+    await expect(page.getByText(/not a valid Fastvest portfolio/)).toBeVisible()
   })
 
   test('reset clears holdings back to empty state', async ({ page }) => {
