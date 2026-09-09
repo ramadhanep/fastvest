@@ -40,20 +40,38 @@
       <slot />
     </main>
 
-    <!-- Floating Add Button (only on home page) -->
-    <div
-      v-if="isHome"
-      class="fixed bottom-6 right-6 sm:right-[max(1.5rem,calc((100vw-28rem)/2+1.5rem))] z-40 pointer-events-auto"
-    >
-      <button
-        type="button"
-        aria-label="Add Holding"
-        class="size-13 rounded-full bg-foreground text-background shadow-xl hover:opacity-90 transition-all flex items-center justify-center cursor-pointer ios-press"
-        @click="addModal.open"
+    <!-- Animated FAB (only on home page) -->
+    <!-- Full-width bar when scrolled up or at top; compact pill when scrolling down -->
+    <Transition name="fab-fade">
+      <div
+        v-if="isHome"
+        class="fixed bottom-0 inset-x-0 z-40 flex items-end justify-center pb-6 px-4 pointer-events-none"
+        style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem))"
       >
-        <Plus class="size-5.5" />
-      </button>
-    </div>
+        <div
+          class="pointer-events-auto fab-container"
+          :class="fabExpanded ? 'fab-expanded' : 'fab-collapsed'"
+        >
+          <button
+            type="button"
+            class="fab-button ios-press"
+            :class="fabExpanded ? 'fab-button-expanded' : 'fab-button-collapsed'"
+            :aria-label="fabExpanded ? 'Add Portfolio' : 'Add Holding'"
+            @click="addModal.open"
+          >
+            <!-- Icon always visible -->
+            <Plus class="fab-icon shrink-0" :class="fabExpanded ? 'size-5' : 'size-5.5'" />
+            <!-- Label only in expanded state -->
+            <span
+              class="fab-label font-medium tracking-tight"
+              :class="fabExpanded ? 'fab-label-visible' : 'fab-label-hidden'"
+            >
+              Add Portfolio
+            </span>
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -82,6 +100,65 @@ const MAX_PULL = 140
 const pullReady = computed(() => pullY.value >= PULL_THRESHOLD && !refreshing.value)
 const pullIndicatorHeight = computed(() => Math.min(pullY.value, MAX_PULL))
 const pullIndicatorOpacity = computed(() => Math.min(pullY.value / PULL_THRESHOLD, 1))
+
+// ─── Animated FAB scroll logic ───────────────────────────────────────────────
+// fabExpanded = true  → full-width pill (at top or scrolling up)
+// fabExpanded = false → compact round button (scrolling down)
+
+const fabExpanded = ref(true)
+
+let lastScrollY = 0
+let scrollTicking = false
+let accumulatedDown = 0   // accumulated downward movement
+let accumulatedUp = 0     // accumulated upward movement
+
+const COLLAPSE_AFTER = 60  // px scrolled down to collapse
+const EXPAND_AFTER = 30    // px scrolled up to expand
+
+function onWindowScroll() {
+  if (scrollTicking) return
+  scrollTicking = true
+  requestAnimationFrame(() => {
+    const currentY = window.scrollY
+    const delta = currentY - lastScrollY
+
+    if (currentY <= 0) {
+      // At very top — always expand
+      fabExpanded.value = true
+      accumulatedDown = 0
+      accumulatedUp = 0
+    } else if (delta > 0) {
+      // Scrolling down
+      accumulatedDown += delta
+      accumulatedUp = 0
+      if (accumulatedDown >= COLLAPSE_AFTER) {
+        fabExpanded.value = false
+        accumulatedDown = 0
+      }
+    } else if (delta < 0) {
+      // Scrolling up
+      accumulatedUp += Math.abs(delta)
+      accumulatedDown = 0
+      if (accumulatedUp >= EXPAND_AFTER) {
+        fabExpanded.value = true
+        accumulatedUp = 0
+      }
+    }
+
+    lastScrollY = currentY
+    scrollTicking = false
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', onWindowScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onWindowScroll)
+})
+
+// ─── Pull to refresh ─────────────────────────────────────────────────────────
 
 function onTouchStart(e: TouchEvent) {
   if (refreshing.value) return
@@ -116,3 +193,115 @@ function onTouchEnd() {
   pullY.value = 0
 }
 </script>
+
+<style scoped>
+/* ── FAB container ───────────────────────────────────── */
+.fab-container {
+  transition:
+    max-width 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-radius 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: max-width, border-radius;
+}
+
+.fab-expanded {
+  max-width: 28rem; /* matches max-w-md */
+  width: 100%;
+  border-radius: 9999px;
+}
+
+.fab-collapsed {
+  max-width: 52px;
+  width: 52px;
+  border-radius: 9999px;
+  /* Shift to right side */
+  margin-left: auto;
+}
+
+/* ── FAB button ──────────────────────────────────────── */
+.fab-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  cursor: pointer;
+  background: var(--foreground);
+  color: var(--background);
+  border: none;
+  outline: none;
+  overflow: hidden;
+  /* shadow */
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.18),
+    0 1px 4px rgba(0, 0, 0, 0.10);
+  transition:
+    height 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-radius 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 300ms ease,
+    opacity 200ms ease;
+  will-change: height, border-radius;
+}
+
+.fab-button-expanded {
+  height: 52px;
+  border-radius: 9999px;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.22),
+    0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.fab-button-collapsed {
+  height: 52px;
+  border-radius: 9999px;
+  gap: 0;
+  padding: 0;
+}
+
+.fab-button:active {
+  opacity: 0.85;
+  transform: scale(0.97);
+}
+
+/* ── FAB icon ────────────────────────────────────────── */
+.fab-icon {
+  transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+/* ── FAB label ───────────────────────────────────────── */
+.fab-label {
+  font-size: 0.9375rem; /* 15px */
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    max-width 380ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 280ms ease,
+    margin-left 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: max-width, opacity;
+}
+
+.fab-label-visible {
+  max-width: 200px;
+  opacity: 1;
+}
+
+.fab-label-hidden {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Fade in/out the entire FAB wrapper ─────────────── */
+.fab-fade-enter-active,
+.fab-fade-leave-active {
+  transition: opacity 300ms ease, transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.fab-fade-enter-from,
+.fab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+</style>
+
