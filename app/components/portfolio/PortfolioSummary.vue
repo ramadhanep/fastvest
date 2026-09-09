@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { Minus, ArrowDownRight, ArrowUpRight, Eye, EyeOff } from '@lucide/vue'
 import { useExchangeRates } from '~/composables/useExchangeRates'
+import { usePreferences } from '~/composables/usePreferences'
 import type { PortfolioSummary } from '#shared/types'
 import { formatCurrency, formatPercent } from '~/utils/format'
 
@@ -15,8 +16,11 @@ const props = defineProps<{
 
 const showBalance = ref(true)
 
-const displayCurrency = ref('USD')
+const { preferences, setDisplayCurrency } = usePreferences()
 const { fromUsd } = useExchangeRates()
+
+// Use persisted currency from preferences
+const displayCurrency = computed(() => preferences.value.displayCurrency)
 
 // convert USD totals to selected currency
 const totalValue = computed(() => fromUsd(props.summary.totalValue, displayCurrency.value))
@@ -33,6 +37,7 @@ const trendIcon = computed(() => {
 const isGain = computed(() => props.summary.totalPnl >= 0)
 const isDayGain = computed(() => props.summary.totalDayChange >= 0)
 </script>
+
 
 <template>
   <section aria-label="Portfolio summary" class="rounded-2xl bg-card p-5 transition-all">
@@ -83,7 +88,11 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
           <EyeOff v-if="showBalance" class="size-3.5" />
           <Eye v-else class="size-3.5" />
         </button>
-        <select v-model="displayCurrency" class="ml-2 rounded-sm bg-muted/20 px-2 py-0.5 text-xs">
+        <select
+          :value="displayCurrency"
+          class="ml-2 rounded-sm bg-muted/20 px-2 py-0.5 text-xs cursor-pointer"
+          @change="setDisplayCurrency(($event.target as HTMLSelectElement).value as 'USD' | 'IDR' | 'SGD')"
+        >
           <option value="USD">USD</option>
           <option value="IDR">IDR</option>
           <option value="SGD">SGD</option>

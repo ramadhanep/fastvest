@@ -1,18 +1,21 @@
 import { kv, storageRawGet, storageRawSet } from '~/lib/storage'
 
 export type ThemePreference = 'system' | 'light' | 'dark'
+export type DisplayCurrency = 'USD' | 'IDR' | 'SGD'
 
 interface Preferences {
   theme: ThemePreference
   refreshInterval: number
+  displayCurrency: DisplayCurrency
 }
 
-const preferences = ref<Preferences>({ theme: 'system', refreshInterval: 60 })
+const preferences = ref<Preferences>({ theme: 'system', refreshInterval: 60, displayCurrency: 'USD' })
 const loaded = ref(false)
 
 const DEFAULT_PREFERENCES: Preferences = {
   theme: 'system',
   refreshInterval: 60,
+  displayCurrency: 'USD',
 }
 
 export function usePreferences() {
@@ -47,6 +50,11 @@ export function usePreferences() {
     persist()
   }
 
+  function setDisplayCurrency(currency: DisplayCurrency) {
+    preferences.value.displayCurrency = currency
+    persist()
+  }
+
   if (import.meta.client && !loaded.value) load()
 
   return {
@@ -54,6 +62,7 @@ export function usePreferences() {
     loaded: readonly(loaded),
     setTheme,
     setRefreshInterval,
+    setDisplayCurrency,
     applyTheme,
   }
 }
