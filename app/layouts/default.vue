@@ -2,7 +2,6 @@
   <div class="min-h-dvh bg-background text-foreground flex flex-col relative antialiased selection:bg-muted">
     <AppHeader
       :refreshing="refreshing"
-      :last-updated="lastUpdated"
       :back-to="isDetail ? '/' : undefined"
       :brand-color="detailBrandColor"
       @refresh="headerRefresh"
@@ -33,7 +32,7 @@
 import { Plus } from '@lucide/vue'
 import { brandColorFor } from '~/utils/brand-colors'
 
-const { refreshing, lastUpdated, refresh } = useQuotes()
+const { refreshing, refresh } = useQuotes()
 const { holdings } = usePortfolio()
 const addModal = useAddHoldingModal()
 const route = useRoute()

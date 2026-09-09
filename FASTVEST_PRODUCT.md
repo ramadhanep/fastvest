@@ -1,6 +1,6 @@
-# FastVest --- Product & Engineering Guide
+# fastvest --- Product & Engineering Guide
 
-> **FastVest** is a fast, local-first, open-source portfolio tracker for
+> **fastvest** is a fast, local-first, open-source portfolio tracker for
 > people who want to open an app, see their portfolio, and understand
 > what is happening immediately.
 >
@@ -14,7 +14,7 @@
 
 ## 1. Mission
 
-Build **FastVest**, a standalone portfolio-monitoring PWA.
+Build **fastvest**, a standalone portfolio-monitoring PWA.
 
 Core principles:
 
@@ -46,7 +46,7 @@ Aruna's complexity.
 
 ## 2.1 One-sentence pitch
 
-**FastVest lets you track your investment portfolio locally, with live
+**fastvest lets you track your investment portfolio locally, with live
 market prices from Yahoo Finance, without an account.**
 
 ## 2.2 Target user
@@ -58,7 +58,7 @@ P&L, and recent market movement in one place.
 
 Primary use case:
 
-> Open FastVest → instantly see portfolio value and P&L → glance at
+> Open fastvest → instantly see portfolio value and P&L → glance at
 > holdings → optionally refresh prices → close.
 
 ------------------------------------------------------------------------
@@ -99,12 +99,12 @@ Use `yahoo-finance2` on the Nuxt server side.
 
 Do not call Yahoo Finance directly from browser code.
 
-The browser calls FastVest's Nitro API routes; server routes call
+The browser calls fastvest's Nitro API routes; server routes call
 `yahoo-finance2`.
 
 ### PWA
 
-FastVest must be installable as a PWA.
+fastvest must be installable as a PWA.
 
 ### Responsive
 
@@ -154,7 +154,7 @@ Avoid dependency bloat.
 
 # 5. Visual Direction
 
-FastVest should feel related to `easeason`, not like a generic dashboard
+fastvest should feel related to `easeason`, not like a generic dashboard
 template.
 
 Reference characteristics:
@@ -351,7 +351,7 @@ Currency
 [Add holding]
 ```
 
-Symbol search should use FastVest's API backed by
+Symbol search should use fastvest's API backed by
 `yahoo-finance2.search()`.
 
 The search experience should: - debounce input - avoid unnecessary
@@ -649,7 +649,7 @@ refresh if appropriate
 
 # 18. Offline Behavior
 
-FastVest should remain useful without network access.
+fastvest should remain useful without network access.
 
 Offline:
 
@@ -671,14 +671,14 @@ When network returns: - refresh quietly - remove the offline indicator
 
 # 19. PWA
 
-FastVest must be installable.
+fastvest must be installable.
 
 Requirements:
 
 -   manifest
 -   icons
--   app name: FastVest
--   short name: FastVest
+-   app name: fastvest
+-   short name: fastvest
 -   theme colors
 -   standalone display
 -   service worker
@@ -716,7 +716,7 @@ Suggested structure:
 
 ``` text
 ┌─────────────────────────────────────────────┐
-│ FastVest                 Refresh   Theme    │
+│ fastvest                 Refresh   Theme    │
 ├─────────────────────────────────────────────┤
 │                                             │
 │ Portfolio Value                             │
@@ -803,7 +803,7 @@ We couldn't find that symbol.
 ### Storage corruption
 
 ``` text
-FastVest couldn't read your saved portfolio.
+fastvest couldn't read your saved portfolio.
 
 [Restore from backup] [Reset local data]
 ```
@@ -947,7 +947,7 @@ For this product, composables are likely enough.
                                │
                                ▼
                     ┌──────────────────────┐
-                    │   FastVest Nuxt App  │
+                    │   fastvest Nuxt App  │
                     │     Vue / UI State   │
                     └──────────┬───────────┘
                                │
@@ -993,7 +993,7 @@ Document clearly:
 
 Use a concise disclaimer:
 
-> FastVest is a portfolio monitoring tool, not financial advice. Market
+> fastvest is a portfolio monitoring tool, not financial advice. Market
 > data is provided through Yahoo Finance and may be delayed, incomplete,
 > or unavailable. Verify important information with your broker or other
 > authoritative sources.
@@ -1045,7 +1045,7 @@ Purpose:
 -   explore response shapes
 -   debug market-data assumptions
 
-Important: MCP is a development/agent tool. The FastVest runtime should
+Important: MCP is a development/agent tool. The fastvest runtime should
 still use the normal `yahoo-finance2` npm package through Nuxt server
 code.
 
@@ -1402,13 +1402,13 @@ Also test theme switching and mobile layout.
 
 # 35. Definition of Done
 
-FastVest is not done when:
+fastvest is not done when:
 
 -   the page renders
 -   the build passes
 -   the dashboard looks good
 
-FastVest is done when:
+fastvest is done when:
 
 ### Product
 
@@ -1458,11 +1458,11 @@ FastVest is done when:
 
 ------------------------------------------------------------------------
 
-# 36. What FastVest Is NOT
+# 36. What fastvest Is NOT
 
-Do not let scope creep turn FastVest into Aruna.
+Do not let scope creep turn fastvest into Aruna.
 
-FastVest is NOT:
+fastvest is NOT:
 
 -   a broker
 -   a trading platform
@@ -1480,7 +1480,7 @@ FastVest is NOT:
 Potential future features must pass this question:
 
 > Does this make portfolio monitoring materially better without making
-> FastVest feel heavy?
+> fastvest feel heavy?
 
 If not, do not build it.
 
@@ -1694,7 +1694,7 @@ Portfolio data must never be committed.
 
 README should explain:
 
--   what FastVest is
+-   what fastvest is
 -   screenshots if available
 -   features
 -   architecture
@@ -1709,7 +1709,7 @@ README should explain:
 
 Include a clear statement:
 
-> FastVest stores portfolio data locally in the user's browser and does
+> fastvest stores portfolio data locally in the user's browser and does
 > not require an account.
 
 ------------------------------------------------------------------------
@@ -1765,7 +1765,7 @@ Do not simply report the failure.
 
 # 45. Final Product Principle
 
-The winning FastVest experience is:
+The winning fastvest experience is:
 
 > **Open → instantly understand → refresh quietly → close.**
 

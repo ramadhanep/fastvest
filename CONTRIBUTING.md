@@ -1,13 +1,13 @@
 # Contributing
 
-Thanks for helping with FastVest. Keep it small, local-first, and fast.
+Thanks for helping with fastvest. Keep it small, local-first, and fast.
 
 ## Principles
 
 - **Local-first.** Portfolio data lives in the browser. Never send it to a server, logs, or analytics.
 - **Server-side market data only.** Yahoo Finance calls belong in `server/`, never in browser code.
-- **Fast + simple.** A feature must make portfolio monitoring materially better without making FastVest feel heavy. When in doubt, leave it out.
-- **No auth, no database.** FastVest has neither and should not grow either.
+- **Fast + simple.** A feature must make portfolio monitoring materially better without making fastvest feel heavy. When in doubt, leave it out.
+- **No auth, no database.** fastvest has neither and should not grow either.
 
 ## Setup
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Plus, ChevronDown } from '@lucide/vue'
+import { ChevronDown } from '@lucide/vue'
 import type { Holding, Quote, SortKey } from '#shared/types'
 import { calculateHoldingMetrics } from '~/utils/calculations'
 import { formatCurrency, formatNumber, formatPercent, formatQuantity } from '~/utils/format'
@@ -14,7 +14,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  add: []
   edit: [h: Holding]
   remove: [h: Holding]
 }>()
@@ -133,15 +132,6 @@ function closeSheet() {
           </select>
           <ChevronDown class="pointer-events-none absolute right-2.5 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         </div>
-
-        <button
-          type="button"
-          class="inline-flex items-center justify-center size-9 rounded-full bg-foreground text-background hover:opacity-90 transition-all ios-press cursor-pointer"
-          :aria-label="'Add holding'"
-          @click="emit('add')"
-        >
-          <Plus class="size-4" />
-        </button>
       </div>
     </div>
 

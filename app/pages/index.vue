@@ -23,7 +23,7 @@ const { refresh, getQuote, errors, lastUpdated, refreshing } = quotes
 const addModal = useAddHoldingModal()
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 
-useHead({ title: 'FastVest · Portfolio Tracker' })
+useHead({ title: 'fastvest · Portfolio Tracker' })
 
 const editorOpen = ref(false)
 const editingHolding = ref<Holding | null>(null)
@@ -204,7 +204,6 @@ onMounted(() => {
         :holdings="holdings"
         :get-quote="getQuote"
         :filtering="filteringSymbol"
-        @add="openAdd"
         @edit="openEdit"
         @remove="removeHolding"
       />

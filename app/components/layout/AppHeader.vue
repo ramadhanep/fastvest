@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { Settings, RefreshCw, Sun, Moon, ArrowLeft } from '@lucide/vue'
-import { formatTimeAgo } from '~/utils/format'
 
 const props = withDefaults(
   defineProps<{
     refreshing?: boolean
-    lastUpdated?: string | null
     backTo?: string
     brandColor?: string | null
   }>(),
   {
     refreshing: false,
-    lastUpdated: null,
     backTo: undefined,
     brandColor: null,
   },
@@ -31,7 +28,6 @@ onMounted(() => {
 })
 
 const isDark = computed(() => colorMode.value === 'dark')
-const timeLabel = computed(() => (props.lastUpdated ? formatTimeAgo(props.lastUpdated) : ''))
 
 const glassStyle = computed(() =>
   props.brandColor ? { backgroundColor: `${props.brandColor}22` } : {},
@@ -63,18 +59,12 @@ const glassStyle = computed(() =>
         >
           <img
             src="/pwa-192x192.png"
-            alt="FastVest"
+            alt="fastvest"
             width="32"
             height="32"
             class="size-8 rounded-full object-cover shrink-0"
           />
-          <span v-if="refreshing" class="text-xs text-muted-foreground flex items-center gap-1.5 font-normal">
-            <RefreshCw class="size-3 animate-spin" />
-            Updating
-          </span>
-          <span v-else-if="lastUpdated" class="text-xs text-muted-foreground font-normal">
-            {{ timeLabel }}
-          </span>
+          <span class="text-sm font-semibold tracking-tight text-foreground/90">fastvest</span>
         </NuxtLink>
 
         <!-- Right: Actions -->

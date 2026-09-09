@@ -4,7 +4,7 @@ import { Download, Upload, Trash2, RefreshCw, Layers, ExternalLink } from '@luci
 import { toast } from 'vue-sonner'
 import type { ThemePreference } from '~/composables/usePreferences'
 
-useHead({ title: 'FastVest · Settings' })
+useHead({ title: 'fastvest · Settings' })
 
 const { holdings, exportPortfolio, importPortfolio, resetPortfolio, loadDemoPortfolio } = usePortfolio()
 const canExport = computed(() => holdings.value.length > 0)
@@ -177,7 +177,7 @@ function formatBytes(bytes: number) {
       <h2 id="about-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">About</h2>
       <div class="rounded-2xl bg-card border border-border/50 overflow-hidden divide-y divide-border/30">
         <div class="px-4 py-3">
-          <p class="text-sm font-medium">FastVest</p>
+          <p class="text-sm font-medium">fastvest</p>
           <p class="text-[11px] text-muted-foreground mt-0.5">Local-first portfolio tracker · Yahoo Finance</p>
         </div>
         <div class="px-4 py-3 flex items-center justify-between">

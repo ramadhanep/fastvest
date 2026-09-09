@@ -7,10 +7,10 @@ export function useExchangeRates() {
     try {
       const res = await $fetch<Record<string, number>>('/api/exchange-rates')
       rates.value = { USD: 1, ...res }
+      loaded.value = true
     } catch {
-      // keep defaults
+      // keep defaults; retry on next mount
     }
-    loaded.value = true
   }
 
   function toUsd(value: number, currency: string): number {
