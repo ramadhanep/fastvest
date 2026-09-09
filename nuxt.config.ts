@@ -95,7 +95,7 @@ export default defineNuxtConfig({
     },
     registerType: 'prompt',
     devOptions: {
-      enabled: false,
+      enabled: true,
       type: 'module',
     },
   },
