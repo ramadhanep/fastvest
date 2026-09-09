@@ -56,28 +56,15 @@ function toggle(symbol: string) {
 </script>
 
 <template>
-  <div class="rounded-2xl bg-card p-5 transition-all">
-    <div class="flex items-center justify-between">
-      <h2 class="text-sm font-semibold text-foreground">Allocation</h2>
-      <button
-        v-if="selectedSymbol"
-        type="button"
-        class="size-6 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-        aria-label="Clear filter"
-        @click="emit('select', null)"
-      >
-        <svg viewBox="0 0 24 24" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-
-    <div class="mt-1 flex flex-col items-center gap-3">
+  <details class="rounded-2xl bg-card p-5 transition-all">
+    <summary class="flex items-center justify-between cursor-pointer text-sm font-semibold text-foreground">
+      Allocation
+      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="mt-2 flex flex-col items-center gap-3">
       <div class="relative">
         <Donut :segments="segments" :size="180" />
       </div>
-
-      <!-- Legend chips -->
       <div class="flex flex-wrap items-center justify-center gap-1.5 max-w-xs">
         <button
           v-for="s in segments"
@@ -93,5 +80,15 @@ function toggle(symbol: string) {
         </button>
       </div>
     </div>
-  </div>
+    <div class="mt-2 flex items-center justify-end" v-if="selectedSymbol">
+      <button
+        type="button"
+        class="size-6 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+        aria-label="Clear filter"
+        @click="emit('select', null)"
+      >
+        <svg viewBox="0 0 24 24" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </details>
 </template>

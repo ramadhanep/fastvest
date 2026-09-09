@@ -19,5 +19,11 @@ export function useExchangeRates() {
     return rate ? value * rate : value
   }
 
-  return { rates: readonly(rates), loaded: readonly(loaded), ensureLoaded, toUsd }
+  function fromUsd(value: number, target: string): number {
+    if (!target || target === 'USD') return value
+    const rate = rates.value[target]
+    return rate ? value / rate : value
+  }
+
+  return { rates: readonly(rates), loaded: readonly(loaded), ensureLoaded, toUsd, fromUsd }
 }
