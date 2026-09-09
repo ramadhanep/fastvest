@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Pencil, Loader2 } from '@lucide/vue'
+import { Pencil, Trash2, Loader2 } from '@lucide/vue'
 import type { ChartData, ChartPoint, Holding } from '#shared/types'
 import { calculateHoldingMetrics } from '~/utils/calculations'
 import { formatCurrency, formatPercent, formatNumber, formatQuantity } from '~/utils/format'
@@ -8,7 +8,7 @@ import { brandColorFor } from '~/utils/brand-colors'
 
 const route = useRoute()
 const router = useRouter()
-const { holdings } = usePortfolio()
+const { holdings, removeHolding } = usePortfolio()
 const quotes = useQuotes()
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 
@@ -109,7 +109,15 @@ const accentStyle = computed(() => {
 })
 
 const editorOpen = ref(false)
+const deleting = ref(false)
 onMounted(ensureRates)
+
+function confirmDelete() {
+  if (holding.value) {
+    removeHolding(holding.value.id)
+    void router.replace('/')
+  }
+}
 </script>
 
 <template>
@@ -126,27 +134,17 @@ onMounted(ensureRates)
             </p>
           </div>
         </div>
-        <div class="text-right flex items-center gap-2">
-          <div>
-            <div v-if="quote" class="font-display text-[1.75rem] font-semibold tabular-nums leading-none">
-              {{ formatCurrency(quote.price, quote.currency ?? 'USD') }}
-            </div>
-            <div
-              v-if="quote && quote.changePercent !== undefined"
-              class="text-xs font-medium tabular-nums mt-1"
-              :class="quote.changePercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-            >
-              {{ quote.changePercent >= 0 ? '+' : '' }}{{ formatPercent(quote.changePercent) }}
-            </div>
+        <div class="text-right">
+          <div v-if="quote" class="font-display text-[1.75rem] font-semibold tabular-nums leading-none">
+            {{ formatCurrency(quote.price, quote.currency ?? 'USD') }}
           </div>
-          <button
-            type="button"
-            class="size-8 rounded-full bg-white/40 dark:bg-white/10 backdrop-blur-xl inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer ios-press shrink-0"
-            aria-label="Edit position"
-            @click="editorOpen = true"
+          <div
+            v-if="quote && quote.changePercent !== undefined"
+            class="text-xs font-medium tabular-nums mt-1"
+            :class="quote.changePercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
           >
-            <Pencil class="size-4" />
-          </button>
+            {{ quote.changePercent >= 0 ? '+' : '' }}{{ formatPercent(quote.changePercent) }}
+          </div>
         </div>
       </div>
 
@@ -168,8 +166,14 @@ onMounted(ensureRates)
 
     <!-- Chart -->
     <div class="mt-4 rounded-2xl bg-card p-4">
-      <div class="flex h-40 items-center justify-center overflow-hidden rounded-xl bg-muted/20 p-2">
-        <Sparkline v-if="chartPoints.length >= 2" :points="chartPoints" :height="140" />
+      <div class="flex h-[300px] items-center justify-center overflow-hidden rounded-xl bg-muted/20 p-2">
+        <HoldingChart
+          v-if="chartPoints.length >= 2"
+          :points="chartPoints"
+          :currency="chartData?.currency"
+          :brand-color="accent ?? undefined"
+          :height="270"
+        />
         <div v-else-if="chartLoading" class="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 class="size-3.5 animate-spin" aria-hidden="true" />
         </div>
@@ -210,6 +214,10 @@ onMounted(ensureRates)
         <span class="text-xs text-muted-foreground font-medium">Market Value</span>
         <span class="text-sm font-semibold tabular-nums">{{ metrics ? formatCurrency(metrics.marketValue, holding.currency ?? 'USD') : '—' }}</span>
       </div>
+      <div class="flex items-center justify-between px-4 py-3 border-b border-border/30">
+        <span class="text-xs text-muted-foreground font-medium">Avg Cost</span>
+        <span class="text-sm font-semibold tabular-nums">{{ formatNumber(holding.averageCost) }} {{ holding.currency ?? '' }}</span>
+      </div>
       <div class="flex items-center justify-between px-4 py-3">
         <span class="text-xs text-muted-foreground font-medium">Total Return</span>
         <span
@@ -224,7 +232,28 @@ onMounted(ensureRates)
         </span>
       </div>
     </div>
+
+    <!-- Actions -->
+    <div class="mt-6 grid grid-cols-2 gap-3">
+      <button
+        type="button"
+        class="inline-flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card h-12 text-sm font-semibold cursor-pointer ios-press active:bg-muted/40"
+        @click="editorOpen = true"
+      >
+        <Pencil class="size-4" aria-hidden="true" />
+        Edit
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center justify-center gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 text-destructive h-12 text-sm font-semibold cursor-pointer ios-press active:bg-destructive/20"
+        @click="deleting = true"
+      >
+        <Trash2 class="size-4" aria-hidden="true" />
+        Delete
+      </button>
+    </div>
   </div>
 
   <HoldingEditorDialog :open="editorOpen" :holding="holding" @saved="editorOpen = false" @close="editorOpen = false" />
+  <DeleteHoldingDialog :holding="deleting ? holding : null" @confirm="confirmDelete" @close="deleting = false" />
 </template>
