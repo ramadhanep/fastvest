@@ -21,12 +21,12 @@ const { preferences } = usePreferences()
 const { online, justBackOnline } = useConnection()
 const { refresh, getQuote, errors, lastUpdated, refreshing } = quotes
 const addModal = useAddHoldingModal()
+const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 
 useHead({ title: 'FastVest · Portfolio Tracker' })
 
 const editorOpen = ref(false)
 const editingHolding = ref<Holding | null>(null)
-const detailHolding = ref<Holding | null>(null)
 const deletingHolding = ref<Holding | null>(null)
 const filteringSymbol = ref<string | null>(null)
 
@@ -39,7 +39,7 @@ watch(addModal.isOpen, (open) => {
 })
 
 const summary = computed(() =>
-  calculatePortfolioSummary(holdings.value, (s) => getQuote(s)),
+  calculatePortfolioSummary(holdings.value, (s) => getQuote(s), toUsd),
 )
 
 const quoteErrors = computed(() => errors.value.filter((e) => e.symbol !== '*').length)
@@ -49,7 +49,7 @@ const hasQuotes = computed(() =>
   holdings.value.length > 0 && holdings.value.some((h) => getQuote(h.symbol)?.price !== undefined),
 )
 
-const displayCurrency = computed(() => holdings.value[0]?.currency ?? 'USD')
+const displayCurrency = 'USD'
 
 function openAdd() {
   editingHolding.value = null
@@ -57,13 +57,6 @@ function openAdd() {
 }
 
 function openEdit(h: Holding) {
-  editingHolding.value = h
-  detailHolding.value = null
-  editorOpen.value = true
-}
-
-function openEditFromDetail(h: Holding) {
-  detailHolding.value = null
   editingHolding.value = h
   editorOpen.value = true
 }
@@ -92,6 +85,7 @@ function shouldRun() {
 }
 
 onMounted(() => {
+  ensureRates()
   const { resume, pause } = useIntervalFn(() => {
     if (shouldRun()) refreshAll()
   }, intervalMs)
@@ -213,7 +207,6 @@ onMounted(() => {
         @add="openAdd"
         @edit="openEdit"
         @remove="removeHolding"
-        @detail="(h: Holding) => (detailHolding = h)"
       />
     </div>
 
@@ -229,15 +222,14 @@ onMounted(() => {
   <HoldingEditorDialog
     :open="editorOpen"
     :holding="editingHolding"
-    @saved="(h: Holding, isNew: boolean) => isNew && (detailHolding = h)"
+    @saved="(h: Holding) => {
+      const isNew = !editingHolding
+      if (isNew) {
+        const href = `/holding/${encodeURIComponent(h.symbol)}`
+        useRouter().push(href)
+      }
+    }"
     @close="editorOpen = false"
-  />
-
-  <HoldingDetailDialog
-    :holding="detailHolding"
-    :get-quote="getQuote"
-    @edit="openEditFromDetail"
-    @close="detailHolding = null"
   />
 
   <DeleteHoldingDialog

@@ -30,8 +30,21 @@ export function calculateHoldingMetrics(holding: Holding, quote: Quote | null | 
 export function calculatePortfolioSummary(
   holdings: readonly Holding[],
   quotesBySymbol: (symbol: string) => Quote | null | undefined,
+  toUsd?: (value: number, currency: string) => number,
 ): PortfolioSummary {
-  const metrics = holdings.map((h) => calculateHoldingMetrics(h, quotesBySymbol(h.symbol)))
+  const metrics = holdings.map((h, i) => {
+    const m = calculateHoldingMetrics(h, quotesBySymbol(h.symbol))
+    const q = quotesBySymbol(h.symbol)
+    const cur = q?.currency ?? h.currency ?? 'USD'
+    const convert = toUsd ?? ((v: number) => v)
+    return {
+      ...m,
+      marketValue: convert(m.marketValue, cur),
+      costBasis: convert(m.costBasis, cur),
+      pnl: convert(m.pnl, cur),
+      dayChange: convert(m.dayChange, cur),
+    }
+  })
   const totalValue = metrics.reduce((s, m) => s + m.marketValue, 0)
   const totalCostBasis = metrics.reduce((s, m) => s + m.costBasis, 0)
   const totalPnl = totalValue - totalCostBasis

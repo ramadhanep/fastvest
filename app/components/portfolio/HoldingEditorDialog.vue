@@ -205,15 +205,8 @@ async function save() {
     >
       <UiDialogHeader class="text-left">
         <UiDialogTitle class="text-base font-semibold tracking-tight">
-          {{ isEdit ? `Edit ${props.holding?.symbol}` : 'Add Holding' }}
+          {{ isEdit ? 'Edit Position' : 'Add Holding' }}
         </UiDialogTitle>
-        <UiDialogDescription class="text-xs text-muted-foreground">
-          {{
-            isEdit
-              ? 'Update quantity or average purchase cost.'
-              : 'Choose from recommended assets or search any ticker.'
-          }}
-        </UiDialogDescription>
       </UiDialogHeader>
 
       <!-- Step 1: Symbol Selection -->
@@ -282,9 +275,8 @@ async function save() {
                   </p>
                 </div>
 
-                <div class="mt-2 flex items-center justify-between text-[11px] text-muted-foreground font-medium">
+                <div class="mt-2 flex items-center text-[11px] text-muted-foreground font-medium">
                   <span>{{ asset.currency }}</span>
-                  <span class="text-foreground group-hover:underline">Select</span>
                 </div>
               </button>
             </div>
@@ -310,7 +302,6 @@ async function save() {
                       <span class="text-[11px] text-muted-foreground truncate block">{{ item.name }}</span>
                     </div>
                   </div>
-                  <span class="text-xs text-muted-foreground">Select</span>
                 </button>
               </div>
             </div>
@@ -349,8 +340,7 @@ async function save() {
               class="flex w-full items-center justify-between rounded-2xl border border-dashed border-border/80 p-3 text-xs text-muted-foreground hover:bg-muted/40 transition-colors cursor-pointer"
               @click="onManual"
             >
-              <span>Use ticker <strong class="text-foreground">"{{ query.trim().toUpperCase() }}"</strong></span>
-              <span class="font-medium text-foreground">Select →</span>
+              <span>Use <strong class="text-foreground">"{{ query.trim().toUpperCase() }}"</strong></span>
             </button>
           </div>
         </div>
@@ -364,7 +354,7 @@ async function save() {
           @click="back"
         >
           <ArrowLeft class="size-3.5" aria-hidden="true" />
-          Change asset
+          Back
         </button>
 
         <!-- Selected Asset Card -->
@@ -378,7 +368,7 @@ async function save() {
               </p>
             </div>
           </div>
-          <span class="rounded-full bg-background px-2.5 py-0.5 text-xs font-medium text-foreground border border-border/60">
+          <span class="rounded-full bg-background px-2.5 py-0.5 text-[11px] font-medium text-foreground border border-border/60">
             {{ currency }}
           </span>
         </div>
@@ -458,7 +448,7 @@ async function save() {
             v-if="estimatedTotal > 0"
             class="rounded-xl border border-border/60 bg-muted/30 p-2.5 flex items-center justify-between text-xs"
           >
-            <span class="text-muted-foreground">Estimated Investment:</span>
+            <span class="text-muted-foreground">Est. Investment</span>
             <span class="font-semibold tabular-nums text-foreground">
               {{ formatCurrency(estimatedTotal, currency) }}
             </span>
@@ -494,21 +484,14 @@ async function save() {
             </div>
           </div>
 
-          <UiDialogFooter class="mt-5 flex gap-2">
-            <button
-              type="button"
-              class="h-10 rounded-full flex-1 border border-border/80 bg-background px-4 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              @click="emit('close')"
-            >
-              Cancel
-            </button>
+          <UiDialogFooter class="mt-5">
             <button
               type="submit"
-              class="h-10 rounded-full flex-1 bg-foreground text-background font-medium text-xs hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              class="h-11 rounded-full w-full bg-foreground text-background font-medium text-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5"
               :disabled="submitting || !selectedSymbol"
             >
               <Loader2 v-if="submitting" class="size-3.5 animate-spin" aria-hidden="true" />
-              {{ isEdit ? 'Save Changes' : 'Add Holding' }}
+              {{ isEdit ? 'Save' : 'Add Holding' }}
             </button>
           </UiDialogFooter>
         </form>

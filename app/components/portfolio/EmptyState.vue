@@ -1,34 +1,29 @@
 <script setup lang="ts">
-import { Plus, Layers } from '@lucide/vue'
+import { Plus } from '@lucide/vue'
 
 const emit = defineEmits<{
   add: []
   loadDemo: []
 }>()
-
-const quickPicks = ['AAPL', 'NVDA', 'BTC-USD', 'SPY', 'BBCA.JK']
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
-    <div
-      class="flex items-center justify-center size-16 rounded-2xl border border-border/80 bg-muted/40 mb-4"
-    >
-      <Layers class="size-7 text-muted-foreground" aria-hidden="true" />
+  <div class="flex flex-col items-center justify-center py-20 px-4 text-center">
+    <div class="flex items-center justify-center size-14 rounded-2xl bg-muted/50 mb-4">
+      <span class="text-2xl font-bold text-muted-foreground">FV</span>
     </div>
 
-    <h1 class="text-xl font-semibold tracking-tight text-foreground">
-      Portfolio is empty
+    <h1 class="text-lg font-semibold tracking-tight text-foreground">
+      Your portfolio
     </h1>
-    <p class="mt-1.5 max-w-xs text-xs text-muted-foreground leading-relaxed">
-      Track US equities, crypto, and IDX stocks with live price updates. Stored locally on this device.
+    <p class="mt-1 max-w-[240px] text-xs text-muted-foreground leading-relaxed">
+      Add your first holding to start tracking.
     </p>
 
-    <!-- CTAs -->
-    <div class="mt-6 flex flex-col sm:flex-row items-center gap-2.5 w-full max-w-xs">
+    <div class="mt-5 flex flex-col items-center gap-2.5 w-full max-w-[200px]">
       <button
         type="button"
-        class="w-full inline-flex items-center justify-center gap-1.5 h-11 rounded-full bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all ios-press cursor-pointer"
+        class="w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-full bg-foreground text-background text-xs font-semibold hover:opacity-90 transition-all ios-press cursor-pointer"
         @click="emit('add')"
       >
         <Plus class="size-4" />
@@ -37,24 +32,10 @@ const quickPicks = ['AAPL', 'NVDA', 'BTC-USD', 'SPY', 'BBCA.JK']
 
       <button
         type="button"
-        class="w-full inline-flex items-center justify-center gap-1.5 h-11 rounded-full border border-border/80 bg-background px-4 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all ios-press cursor-pointer"
+        class="w-full inline-flex items-center justify-center h-10 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground transition-colors ios-press cursor-pointer"
         @click="emit('loadDemo')"
       >
         Load Demo
-      </button>
-    </div>
-
-    <!-- Quick suggestions -->
-    <div class="mt-8 flex flex-wrap items-center justify-center gap-1.5 max-w-xs">
-      <span class="text-xs text-muted-foreground mr-1">Try:</span>
-      <button
-        v-for="sym in quickPicks"
-        :key="sym"
-        type="button"
-        class="px-2.5 py-1 rounded-full bg-muted/60 hover:bg-muted text-xs text-foreground/80 hover:text-foreground transition-colors cursor-pointer ios-press"
-        @click="emit('add')"
-      >
-        {{ sym }}
       </button>
     </div>
   </div>

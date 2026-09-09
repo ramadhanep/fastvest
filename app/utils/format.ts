@@ -13,16 +13,10 @@ export function formatCurrency(value: number | undefined | null, currency = 'USD
   const negative = value < 0
   const abs = Math.abs(value)
   const symbol = currencySymbol[currency] ?? ''
-  const isIdr = currency === 'IDR'
-  const digits = isIdr && abs < 10000
-    ? 2
-    : isIdr
-      ? 0
-      : 2
 
   return `${negative ? '-' : ''}${symbol}${abs.toLocaleString('en-US', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })}`
 }
 

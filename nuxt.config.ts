@@ -71,6 +71,7 @@ export default defineNuxtConfig({
     workbox: {
       navigateFallback: '/',
       globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      globIgnores: ['**/node_modules/**/*', 'sw.js', 'workbox-*.js', '**/_payload.json', '_nuxt/builds/**/*.json'],
       cleanupOutdatedCaches: true,
       clientsClaim: true,
       skipWaiting: true,
@@ -94,5 +95,9 @@ export default defineNuxtConfig({
       ],
     },
     registerType: 'prompt',
+    devOptions: {
+      enabled: true,
+      type: 'module',
+    },
   },
 })
