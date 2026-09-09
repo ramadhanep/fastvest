@@ -73,7 +73,7 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
-      globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}', '**/*.webmanifest'],
       cleanupOutdatedCaches: true,
       clientsClaim: true,
       skipWaiting: true,
@@ -100,6 +100,7 @@ export default defineNuxtConfig({
     devOptions: {
       enabled: true,
       type: 'module',
+      suppressWarnings: true,
     },
   },
 })

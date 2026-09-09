@@ -149,7 +149,7 @@ const RANGE_SECONDS: Record<string, number> = {
 
 const INTERVAL: Record<string, string> = {
   '1d': '5m',
-  '5d': '30m',
+  '5d': '1d',
   '1mo': '1d',
   '3mo': '1d',
   '6mo': '1d',

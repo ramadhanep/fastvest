@@ -47,26 +47,8 @@ const allocation = computed(() => {
   return mvUsd > 0 ? (mvUsd / portfolioTotal.value) * 100 : 0
 })
 
-const RANGES = ['1d', '1w', '1m', '3m', '6m', '1y', 'max'] as const
+const RANGES = ['1w', '1m', '3m', '6m', '1y', 'max'] as const
 type Range = (typeof RANGES)[number]
-
-const range = ref<Range>('1m')
-const chartData = ref<ChartData | null>(null)
-const chartLoading = ref(false)
-const chartError = ref(false)
-let chartRequest = 0
-
-watch(
-  () => holding.value?.symbol,
-  (s) => {
-    if (s) loadChart(s, '1m')
-  },
-  { immediate: true },
-)
-
-watch(range, (r) => {
-  if (holding.value) loadChart(holding.value.symbol, r)
-})
 
 const RANGE_MAP: Record<string, string> = { '1w': '5d', '1m': '1mo', '3m': '3mo', '6m': '6mo' }
 async function loadChart(symbol: string, r: Range) {
@@ -84,6 +66,24 @@ async function loadChart(symbol: string, r: Range) {
     if (reqId === chartRequest) chartLoading.value = false
   }
 }
+
+const range = ref<Range>('1w')
+const chartData = ref<ChartData | null>(null)
+const chartLoading = ref(false)
+const chartError = ref(false)
+let chartRequest = 0
+
+watch(
+  () => holding.value?.symbol,
+  (s) => {
+    if (s) loadChart(s, '1w')
+  },
+  { immediate: true },
+)
+
+watch(range, (r) => {
+  if (holding.value) loadChart(holding.value.symbol, r)
+})
 
 const chartPoints = computed<ChartPoint[]>(() => chartData.value?.points ?? [])
 const periodChange = computed(() => {
