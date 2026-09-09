@@ -64,7 +64,7 @@ const option = computed(() => ({
     borderColor: tooltipBorder.value,
     borderWidth: 1,
     padding: [8, 12],
-    textStyle: { color: tooltipText.value, fontSize: 12, fontFamily: 'Geist, system-ui, sans-serif' },
+    textStyle: { color: tooltipText.value, fontSize: 12, fontFamily: 'Domine, system-ui, serif' },
     formatter: (params: { value: (number | Date)[]; name: string }[]) => {
       const p = params[0]
       if (!p) return ''

@@ -60,7 +60,7 @@ const glassStyle = computed(() =>
             height="32"
             class="size-8 rounded-full object-cover shrink-0"
           />
-          <span class="font-display text-sm font-semibold tracking-tight text-foreground/90">fastvest</span>
+          <span class="font-serif text-sm font-semibold tracking-tight text-foreground/90">Portfolio</span>
         </NuxtLink>
 
         <!-- Right: Actions -->

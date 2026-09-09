@@ -24,8 +24,7 @@ export default defineNuxtConfig({
   fonts: {
     provider: 'google',
     families: [
-      { name: 'Geist', weights: [400, 500, 600, 700, 800] },
-      { name: 'PT Serif', weights: [400, 500, 600, 700], styles: ['normal'] },
+      { name: 'Domine', weights: [400, 500, 600, 700] },
     ],
   },
   vite: {
