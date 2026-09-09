@@ -38,15 +38,47 @@ const hex = computed(() => {
   return null
 })
 
-function hexToRgba(h: string, alpha: number): string {
-  const c = h.replace('#', '')
-  const r = parseInt(c.slice(0, 2), 16)
-  const g = parseInt(c.slice(2, 4), 16)
-  const b = parseInt(c.slice(4, 6), 16)
-  return `rgba(${r},${g},${b},${alpha})`
+function hexChannel(h: string, shift: number): number {
+  return (parseInt(h.slice(1), 16) >> shift) & 255
 }
 
-const lineColor = computed(() => hex.value ?? (isDark.value ? '#e8e8ea' : '#1c1c1e'))
+function luminance(h: string): number {
+  const r = hexChannel(h, 16) / 255
+  const g = hexChannel(h, 8) / 255
+  const b = hexChannel(h, 0) / 255
+  return 0.299 * r + 0.587 * g + 0.114 * b
+}
+
+function blendToLuminance(h: string, target: number): string {
+  const r = hexChannel(h, 16)
+  const g = hexChannel(h, 8)
+  const b = hexChannel(h, 0)
+  const cur = luminance(h)
+  if (Math.abs(cur - target) < 0.001) return h
+  const k = (target - cur) / Math.max(cur, 0.0001)
+  const br = Math.round(Math.max(0, Math.min(255, r + 255 * k)))
+  const bg = Math.round(Math.max(0, Math.min(255, g + 255 * k)))
+  const bb = Math.round(Math.max(0, Math.min(255, b + 255 * k)))
+  return `#${((br << 16) | (bg << 8) | bb).toString(16).padStart(6, '0')}`
+}
+
+/** Adapts brand color so it always stays visible on both dark and light backgrounds. */
+function visibleBrandColor(brand: string, dark: boolean): string {
+  const lum = luminance(brand)
+  if (dark) {
+    // Too dark on dark bg → lighten to lum 0.65
+    if (lum < 0.4) return blendToLuminance(brand, 0.65)
+  } else {
+    // Too bright on light bg → darken to lum 0.4
+    if (lum > 0.75) return blendToLuminance(brand, 0.4)
+  }
+  return brand
+}
+
+const lineColor = computed(() => {
+  if (hex.value) return visibleBrandColor(hex.value, isDark.value)
+  return isDark.value ? '#e8e8ea' : '#1c1c1e'
+})
 
 const data = computed(() =>
   props.points.map((p) => ({ value: [new Date(p.timestamp * (p.timestamp < 1e12 ? 1000 : 1)), p.close] as [Date, number] })),
@@ -111,7 +143,7 @@ const option = computed(() => ({
       sampling: 'lttb' as const,
       lineStyle: { color: lineColor.value, width: 2.5 },
       itemStyle: { color: lineColor.value },
-      areaStyle: hex.value
+      areaStyle: lineColor.value !== (isDark.value ? '#e8e8ea' : '#1c1c1e')
         ? {
             color: {
               type: 'linear' as const,
@@ -120,8 +152,14 @@ const option = computed(() => ({
               x2: 0,
               y2: 1,
               colorStops: [
-                { offset: 0, color: hexToRgba(hex.value, 0.22) },
-                { offset: 1, color: hexToRgba(hex.value, 0) },
+                {
+                  offset: 0,
+                  color: `rgba(${hexChannel(lineColor.value, 16)},${hexChannel(lineColor.value, 8)},${hexChannel(lineColor.value, 0)},0.22)`,
+                },
+                {
+                  offset: 1,
+                  color: `rgba(${hexChannel(lineColor.value, 16)},${hexChannel(lineColor.value, 8)},${hexChannel(lineColor.value, 0)},0)`,
+                },
               ],
             },
           }
