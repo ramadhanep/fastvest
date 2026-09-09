@@ -47,7 +47,7 @@ const allocation = computed(() => {
   return mvUsd > 0 ? (mvUsd / portfolioTotal.value) * 100 : 0
 })
 
-const RANGES = ['1w', '1m', '3m', '6m', '1y', 'max'] as const
+const RANGES = ['1w', '1m', '3m', '6m', '1y', '2y', 'max'] as const
 type Range = (typeof RANGES)[number]
 
 const RANGE_MAP: Record<string, string> = { '1w': '5d', '1m': '1mo', '3m': '3mo', '6m': '6mo' }
@@ -67,7 +67,7 @@ async function loadChart(symbol: string, r: Range) {
   }
 }
 
-const range = ref<Range>('1w')
+const range = ref<Range>('6m')
 const chartData = ref<ChartData | null>(null)
 const chartLoading = ref(false)
 const chartError = ref(false)
@@ -76,7 +76,7 @@ let chartRequest = 0
 watch(
   () => holding.value?.symbol,
   (s) => {
-    if (s) loadChart(s, '1w')
+    if (s) loadChart(s, '6m')
   },
   { immediate: true },
 )

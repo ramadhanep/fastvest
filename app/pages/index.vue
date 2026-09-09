@@ -232,7 +232,6 @@ onMounted(() => {
   />
 
   <DeleteHoldingDialog
-    :open="!!deletingHolding"
     :holding="deletingHolding"
     @confirm="confirmDelete"
     @close="deletingHolding = null"

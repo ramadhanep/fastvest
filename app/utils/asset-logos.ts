@@ -27,5 +27,5 @@ export function getAssetLogoUrl(symbol: string): string | null {
 
 export function getSymbolInitials(symbol: string): string {
   const clean = symbol.replace('.JK', '').replace('-USD', '').replace('^', '')
-  return clean.slice(0, 4)
+  return clean.slice(0, 2)
 }

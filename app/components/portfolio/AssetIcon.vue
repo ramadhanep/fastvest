@@ -41,7 +41,7 @@ const sizeClasses = computed(() => {
     />
     <div
       v-else
-      class="size-full rounded-full bg-muted border border-border/60 text-muted-foreground font-semibold flex items-center justify-center uppercase tracking-tight"
+      class="size-full rounded-full bg-muted border border-border/60 text-muted-foreground font-semibold flex items-center justify-center uppercase tracking-tight px-0.5 truncate"
     >
       {{ initials }}
     </div>
