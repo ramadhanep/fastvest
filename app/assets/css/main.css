@@ -6,8 +6,8 @@
 
 @theme inline {
   --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
-  --font-display: 'Newsreader', 'Source Serif 4', Georgia, 'Times New Roman', serif;
-  --font-serif: 'Newsreader', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-display: 'PT Serif', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-serif: 'PT Serif', 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-heading: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);

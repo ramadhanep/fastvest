@@ -25,7 +25,7 @@ export default defineNuxtConfig({
     provider: 'google',
     families: [
       { name: 'Geist', weights: [400, 500, 600, 700, 800] },
-      { name: 'Newsreader', weights: [400, 500, 600, 700], styles: ['normal'] },
+      { name: 'PT Serif', weights: [400, 500, 600, 700], styles: ['normal'] },
     ],
   },
   vite: {
