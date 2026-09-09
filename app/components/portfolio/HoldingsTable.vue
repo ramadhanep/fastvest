@@ -92,7 +92,8 @@ function sortLabel(key: SortKey) {
 
 let touchStartX = 0
 let touchStartY = 0
-let swiping = false
+let touchMoved = false  // true if finger moved enough in any direction (scroll or swipe)
+let swiping = false     // true only if horizontal swipe detected
 
 function onRowTouchStart(e: TouchEvent, id: string) {
   if (swipedId.value && swipedId.value !== id) { swipedId.value = null }
@@ -100,6 +101,7 @@ function onRowTouchStart(e: TouchEvent, id: string) {
   if (!t) return
   touchStartX = t.clientX
   touchStartY = t.clientY
+  touchMoved = false
   swiping = false
 }
 
@@ -108,6 +110,12 @@ function onRowTouchMove(e: TouchEvent) {
   if (!t) return
   const dx = t.clientX - touchStartX
   const dy = t.clientY - touchStartY
+  const dist = Math.sqrt(dx * dx + dy * dy)
+  // Any movement > 6px means the finger is scrolling or swiping — not a tap
+  if (dist > 6) {
+    touchMoved = true
+  }
+  // Horizontal swipe detection (left-swipe to reveal actions)
   if (!swiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
     swiping = true
   }
@@ -115,20 +123,34 @@ function onRowTouchMove(e: TouchEvent) {
 
 function onRowTouchEnd(e: TouchEvent, h: Holding) {
   const t = e.changedTouches[0]
-  if (!t) { swiping = false; return }
+  if (!t) { swiping = false; touchMoved = false; return }
   const dx = t.clientX - touchStartX
+
   if (swiping && dx < -50) {
+    // Left swipe: reveal action buttons
     swipedId.value = h.id
-  } else if (!swiping || Math.abs(dx) < 10) {
+  } else if (!touchMoved) {
+    // Clean tap (no movement): navigate or close swiped row
     if (swipedId.value === h.id) { swipedId.value = null }
     else { openDetail(h) }
-  } else {
+  } else if (swiping) {
+    // Horizontal swipe but not far enough: close any open row
     swipedId.value = null
   }
+  // Vertical scroll (touchMoved && !swiping): do nothing, let scroll happen
+
   swiping = false
+  touchMoved = false
+  // Suppress the synthetic click event that iOS fires after touchend
+  hasTouched = true
+  setTimeout(() => { hasTouched = false }, 500)
 }
 
+let hasTouched = false
+
 function onRowClick(h: Holding) {
+  // Suppress synthetic iOS click that fires ~300ms after touchend
+  if (hasTouched) return
   if (swipedId.value) { swipedId.value = null; return }
   openDetail(h)
 }
