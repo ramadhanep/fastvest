@@ -36,8 +36,44 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
 
 <template>
   <section aria-label="Portfolio summary" class="rounded-2xl bg-card p-5 transition-all">
-    <!-- Header: Privacy Toggle only -->
-      <div class="flex items-center justify-between">
+
+
+
+    <div class="flex justify-between items-center">
+      <div>
+        <!-- Main Value -->
+        <h2 class="text-[2.25rem] font-semibold tracking-tight tabular-nums text-foreground leading-none">
+          <template v-if="showBalance">
+            {{ formatCurrency(totalValue, displayCurrency) }}
+          </template>
+          <template v-else>
+            ••••••••
+          </template>
+        </h2>
+        <!-- P&L inline -->
+        <div class="mt-2 flex items-center gap-2">
+          <div
+            v-if="hasQuotes"
+            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+            :class="
+              isGain
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+            "
+          >
+            <component :is="trendIcon" class="size-3" />
+            <span>
+              <template v-if="showBalance">
+                {{ isGain ? '+' : '' }}{{ formatCurrency(totalPnl, displayCurrency) }}
+              </template>
+              <template v-else>•••</template>
+              <span class="opacity-60 ml-0.5">{{ summary.totalPnlPercent === undefined ? '' : formatPercent(summary.totalPnlPercent) }}</span>
+            </span>
+          </div>
+          <span class="text-[11px] text-muted-foreground tabular-nums">{{ summary.holdingsCount }}</span>
+        </div>
+      </div>
+      <div class="flex items-center">
         <button
           type="button"
           class="size-7 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ios-press cursor-pointer"
@@ -52,40 +88,6 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
           <option value="IDR">IDR</option>
           <option value="SGD">SGD</option>
         </select>
-      </div>
-
-    <!-- Main Value -->
-    <div class="mt-1">
-        <h2 class="text-[2.25rem] font-semibold tracking-tight tabular-nums text-foreground leading-none">
-          <template v-if="showBalance">
-            {{ formatCurrency(totalValue, displayCurrency) }}
-          </template>
-          <template v-else>
-            ••••••••
-          </template>
-        </h2>
-
-      <!-- P&L inline -->
-      <div class="mt-2 flex items-center gap-2">
-        <div
-          v-if="hasQuotes"
-          class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-          :class="
-            isGain
-              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-          "
-        >
-          <component :is="trendIcon" class="size-3" />
-          <span>
-            <template v-if="showBalance">
-              {{ isGain ? '+' : '' }}{{ formatCurrency(totalPnl, displayCurrency) }}
-            </template>
-            <template v-else>•••</template>
-            <span class="opacity-60 ml-0.5">{{ summary.totalPnlPercent === undefined ? '' : formatPercent(summary.totalPnlPercent) }}</span>
-          </span>
-        </div>
-        <span class="text-[11px] text-muted-foreground tabular-nums">{{ summary.holdingsCount }}</span>
       </div>
     </div>
 
