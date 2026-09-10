@@ -60,6 +60,7 @@ export default defineNuxtConfig({
     fallback: 'light',
   },
   pwa: {
+    registerType: 'autoUpdate',
     manifest: {
       name: 'Fastvest',
       short_name: 'Fastvest',
@@ -69,11 +70,15 @@ export default defineNuxtConfig({
       background_color: '#0a0a0b',
       display: 'standalone',
       start_url: '/',
+      scope: '/',
       icons: [
         { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
         { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
         { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
       ],
+    },
+    client: {
+      installPrompt: true,
     },
     workbox: {
       navigateFallback: '/',
@@ -100,9 +105,8 @@ export default defineNuxtConfig({
         },
       ],
     },
-    registerType: 'prompt',
     devOptions: {
-      enabled: true,
+      enabled: false,
       type: 'module',
       suppressWarnings: true,
     },
