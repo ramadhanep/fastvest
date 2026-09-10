@@ -14,8 +14,8 @@ describe('formatCurrency', () => {
   it('formats negative values', () => {
     expect(formatCurrency(-482.1, 'USD')).toBe('-$482.10')
   })
-  it('formats IDR with 2 decimals', () => {
-    expect(formatCurrency(1500000, 'IDR')).toBe('Rp1,500,000.00')
+  it('formats IDR without decimals', () => {
+    expect(formatCurrency(1500000, 'IDR')).toBe('Rp1,500,000')
   })
   it('renders dash for missing values', () => {
     expect(formatCurrency(undefined)).toBe('—')
