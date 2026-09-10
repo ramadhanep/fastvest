@@ -76,9 +76,4 @@ export function calculatePortfolioSummary(
   }
 }
 
-export function formatTtlAge(date: string | number | Date): string {
-  const ttl = Date.now() - new Date(date).getTime()
-  if (ttl <= DAY_MS) return `${Math.max(1, Math.round(ttl / 60000))}m`
-  const days = Math.floor(ttl / DAY_MS)
-  return `${days}d`
-}
+

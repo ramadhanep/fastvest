@@ -224,6 +224,4 @@ export function usePortfolio() {
   }
 }
 
-export function notifyAdd(holding: Holding) {
-  toast.success(`${holding.symbol} added to portfolio`)
-}
+
