@@ -32,7 +32,7 @@
 
     <main
       ref="mainEl"
-      class="mx-auto w-full max-w-md px-0 sm:px-4 pb-28 pt-2 flex-1"
+      class="mx-auto w-full max-w-md sm:max-w-xl lg:max-w-3xl px-0 sm:px-4 pb-28 pt-2 flex-1"
       @touchstart.passive="onTouchStart"
       @touchmove.passive="onTouchMove"
       @touchend="onTouchEnd"
@@ -49,7 +49,7 @@
         style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem))"
       >
         <div
-          class="w-full max-w-md pointer-events-auto fab-slide"
+          class="w-full max-w-md sm:max-w-xl lg:max-w-3xl pointer-events-auto fab-slide"
           :class="{ 'fab-slide--hidden': !fabVisible }"
         >
           <!-- Liquid glass container -->

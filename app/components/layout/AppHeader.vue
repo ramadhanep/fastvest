@@ -46,7 +46,7 @@ const glassStyle = computed(() =>
     <LiquidGlass
       :style="glassStyle"
       :dense="scrolled"
-      class="w-full max-w-md pointer-events-auto"
+      class="w-full max-w-md sm:max-w-xl lg:max-w-3xl pointer-events-auto"
     >
       <div class="flex items-center justify-between gap-2">
         <!-- Left: Brand or Back Button -->
