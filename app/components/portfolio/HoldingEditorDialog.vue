@@ -190,7 +190,7 @@ function cashSymbol(): string {
 
 function cashNameFromSymbol(symbol: string): string {
   const m = symbol.match(/^CASH-(.+)-([A-Z]{3})$/)
-  return m ? m[1] : ''
+  return m?.[1] ?? ''
 }
 
 function validateCash(): boolean {
