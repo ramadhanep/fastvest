@@ -9,7 +9,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="relative rounded-2xl border border-border/50 bg-muted/30 p-3.5 transition-all">
+  <div class="relative rounded-2xl border border-border/30 bg-muted/30 p-3.5 transition-all">
     <div class="flex items-center justify-between gap-3">
       <p class="text-xs text-muted-foreground leading-relaxed flex-1">
         Sample data loaded. Add your real investments or start fresh.

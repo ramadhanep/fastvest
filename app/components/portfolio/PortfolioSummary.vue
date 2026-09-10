@@ -8,8 +8,6 @@ import { formatCurrency, formatPercent } from '~/utils/format'
 
 const props = defineProps<{
   summary: PortfolioSummary
-  // currency prop no longer needed, kept for backward compatibility
-  currency: string
   hasQuotes: boolean
   quoteErrors: number
 }>()
@@ -27,6 +25,20 @@ const totalValue = computed(() => fromUsd(props.summary.totalValue, displayCurre
 const totalCost = computed(() => fromUsd(props.summary.totalCostBasis, displayCurrency.value))
 const totalPnl = computed(() => fromUsd(props.summary.totalPnl, displayCurrency.value))
 
+// iOS-style animated number counting when values change
+const animatedTotal = useTransition(totalValue, {
+  duration: 600,
+  transition: [0.32, 0.72, 0, 1] as const,
+})
+const animatedCost = useTransition(totalCost, {
+  duration: 600,
+  transition: [0.32, 0.72, 0, 1] as const,
+})
+const animatedPnl = useTransition(totalPnl, {
+  duration: 600,
+  transition: [0.32, 0.72, 0, 1] as const,
+})
+
 const trendIcon = computed(() => {
   if (!props.hasQuotes) return Minus
   if (props.summary.totalDayChange > 0) return ArrowUpRight
@@ -40,16 +52,13 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
 
 
 <template>
-  <section aria-label="Portfolio summary" class="rounded-2xl bg-card p-5 transition-all">
-
-
-
+  <section aria-label="Portfolio summary" class="rounded-2xl bg-card p-5 transition-all card-press elev-1 contain-layout">
     <div class="flex justify-between items-center">
       <div>
         <!-- Main Value -->
         <h2 class="text-[2.25rem] font-semibold tracking-tight tabular-nums text-foreground leading-none">
           <template v-if="showBalance">
-            {{ formatCurrency(totalValue, displayCurrency) }}
+            {{ formatCurrency(animatedTotal, displayCurrency) }}
           </template>
           <template v-else>
             ••••••••
@@ -69,7 +78,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
             <component :is="trendIcon" class="size-3" />
             <span>
               <template v-if="showBalance">
-                {{ isGain ? '+' : '' }}{{ formatCurrency(totalPnl, displayCurrency) }}
+                {{ isGain ? '+' : '' }}{{ formatCurrency(animatedPnl, displayCurrency) }}
               </template>
               <template v-else>•••</template>
               <span class="opacity-60 ml-0.5">{{ summary.totalPnlPercent === undefined ? '' : formatPercent(summary.totalPnlPercent) }}</span>
@@ -105,11 +114,11 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
       <div class="px-3 py-2.5 text-center">
         <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Invested</p>
         <p class="mt-0.5 text-xs font-semibold tabular-nums text-foreground truncate">
-          <template v-if="showBalance">{{ formatCurrency(totalCost, displayCurrency) }}</template>
+          <template v-if="showBalance">{{ formatCurrency(animatedCost, displayCurrency) }}</template>
           <template v-else>••••</template>
         </p>
       </div>
-      <div class="px-3 py-2.5 text-center border-x border-border/40">
+      <div class="px-3 py-2.5 text-center border-x border-border/30">
         <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Return</p>
         <p
           class="mt-0.5 text-xs font-semibold tabular-nums truncate"
@@ -122,7 +131,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
           "
         >
           <template v-if="hasQuotes && showBalance">
-            {{ isGain ? '+' : '' }}{{ formatCurrency(totalPnl, displayCurrency) }}
+            {{ isGain ? '+' : '' }}{{ formatCurrency(animatedPnl, displayCurrency) }}
           </template>
           <template v-else-if="!showBalance">••••</template>
           <template v-else>—</template>
