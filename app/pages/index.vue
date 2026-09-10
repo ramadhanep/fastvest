@@ -72,7 +72,10 @@ function requestRemove(h: Holding) {
 }
 
 function refreshAll() {
-  if (holdings.value.length) refresh(holdings.value.map((h) => h.symbol))
+  const symbols = holdings.value
+    .filter((h) => !h.isCash && !h.symbol.startsWith('CASH-'))
+    .map((h) => h.symbol)
+  if (symbols.length) refresh(symbols)
 }
 
 const intervalMs = computed(() =>

@@ -16,6 +16,7 @@ const symbol = computed(() => String(route.params.symbol ?? ''))
 const holding = computed<Holding | null>(() =>
   holdings.value.find((h) => h.symbol === symbol.value) ?? null,
 )
+const isCashSymbol = computed(() => !!holding.value?.symbol.startsWith('CASH-'))
 
 const getQuote = (s: string) => quotes.getQuote(s)
 const quote = computed(() => (holding.value ? getQuote(holding.value.symbol) : null))
@@ -76,13 +77,13 @@ let chartRequest = 0
 watch(
   () => holding.value?.symbol,
   (s) => {
-    if (s) loadChart(s, '6m')
+    if (s && !isCashSymbol.value) loadChart(s, '6m')
   },
   { immediate: true },
 )
 
 watch(range, (r) => {
-  if (holding.value) loadChart(holding.value.symbol, r)
+  if (holding.value && !isCashSymbol.value) loadChart(holding.value.symbol, r)
 })
 
 const chartPoints = computed<ChartPoint[]>(() => chartData.value?.points ?? [])
@@ -129,14 +130,20 @@ function confirmDelete() {
           <div class="flex items-center gap-3">
             <AssetIcon :symbol="holding.symbol" size="lg" />
             <div>
-              <p class="text-sm font-semibold tracking-tight">{{ holding.symbol }}</p>
+              <p class="text-sm font-semibold tracking-tight">{{ holding.name ?? holding.symbol }}</p>
               <p class="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[160px]">
-                {{ quote?.name ?? holding.notes ?? '' }}
+                {{ isCashSymbol ? `Cash balance · ${holding.currency ?? ''}` : (quote?.name ?? holding.notes ?? '') }}
               </p>
             </div>
           </div>
           <div class="text-right">
-            <div v-if="quote" class="font-display text-[1.75rem] font-semibold tabular-nums leading-none">
+            <div
+              v-if="isCashSymbol"
+              class="font-display text-[1.75rem] font-semibold tabular-nums leading-none"
+            >
+              {{ formatCurrency(holding.quantity, holding.currency ?? 'USD') }}
+            </div>
+            <div v-else-if="quote" class="font-display text-[1.75rem] font-semibold tabular-nums leading-none">
               {{ formatCurrency(quote.price, quote.currency ?? 'USD') }}
             </div>
             <div
@@ -151,12 +158,12 @@ function confirmDelete() {
 
         <div class="mt-4 grid grid-cols-3 gap-2">
           <div>
-            <p class="text-[10px] text-muted-foreground font-medium">Shares</p>
-            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ formatQuantity(holding.quantity) }}</p>
+            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? 'Amount' : 'Shares' }}</p>
+            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? formatCurrency(holding.quantity, holding.currency ?? 'USD') : formatQuantity(holding.quantity) }}</p>
           </div>
           <div class="text-center">
-            <p class="text-[10px] text-muted-foreground font-medium">Avg Cost</p>
-            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ formatNumber(holding.averageCost) }}</p>
+            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? 'Rate' : 'Avg Cost' }}</p>
+            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? '—' : formatNumber(holding.averageCost) }}</p>
           </div>
           <div class="text-right">
             <p class="text-[10px] text-muted-foreground font-medium">Weight</p>
@@ -166,7 +173,7 @@ function confirmDelete() {
       </div>
 
       <!-- Chart -->
-      <div class="mt-4 rounded-2xl bg-card p-4 card-press elev-1">
+      <div v-if="!isCashSymbol" class="mt-4 rounded-2xl bg-card p-4 card-press elev-1">
         <Transition name="chart-fade" mode="out-in">
           <div
             :key="range + (chartError ? '-err' : chartData ? '-ok' : '-loading')"

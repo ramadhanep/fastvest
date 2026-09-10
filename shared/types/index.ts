@@ -6,6 +6,7 @@ export interface Holding {
   quantity: number
   averageCost: number
   currency?: string
+  name?: string
   notes?: string
   createdAt: string
   isCash?: boolean // added

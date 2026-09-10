@@ -55,6 +55,9 @@ const rows = computed(() => {
       metrics,
       usdValue: toUsd(metrics.marketValue, cur),
       usdPnl: toUsd(metrics.pnl, cur),
+      displayName: h.name ?? h.symbol,
+      isCashH: !!(h.isCash || h.symbol.startsWith('CASH-')),
+      currency: cur,
     }
   })
 
@@ -259,7 +262,7 @@ function onRowClick(h: Holding) {
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
                 <span class="text-sm font-semibold text-foreground">
-                  {{ row.holding.symbol }}
+                  {{ row.displayName }}
                 </span>
                 <span
                   v-if="row.quote && row.quote.changePercent !== undefined"
@@ -275,7 +278,10 @@ function onRowClick(h: Holding) {
               </div>
 
               <p class="truncate text-[11px] text-muted-foreground mt-0.5 tabular-nums">
-                {{ formatQuantity(row.holding.quantity) }} · {{ formatNumber(row.holding.averageCost) }} {{ row.holding.currency ?? '' }}
+                <template v-if="row.isCashH">{{ formatCurrency(row.holding.quantity, row.currency) }}</template>
+                <template v-else>
+                  {{ formatQuantity(row.holding.quantity) }} · {{ formatNumber(row.holding.averageCost) }} {{ row.holding.currency ?? '' }}
+                </template>
               </p>
             </div>
           </div>
@@ -283,7 +289,11 @@ function onRowClick(h: Holding) {
           <!-- Market Value & Total Return -->
           <div class="text-right shrink-0">
             <p class="text-sm font-semibold tabular-nums text-foreground">
-              {{ row.quote ? formatCurrency(row.metrics.marketValue, row.quote.currency ?? 'USD') : '—' }}
+              {{ row.quote
+                ? formatCurrency(row.metrics.marketValue, row.quote.currency ?? 'USD')
+                : row.isCashH
+                  ? formatCurrency(row.metrics.marketValue, row.currency)
+                  : '—' }}
             </p>
             <p
               class="text-[11px] font-medium tabular-nums mt-0.5"

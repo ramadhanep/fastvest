@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Search, Loader2, ArrowLeft, Zap } from '@lucide/vue'
+import { Search, Loader2, ArrowLeft, Zap, Wallet, ChevronRight } from '@lucide/vue'
 import type { Holding, SearchResult } from '#shared/types'
 import { holdingSchema } from '#shared/schemas/holding'
 import { toast } from 'vue-sonner'
@@ -32,18 +32,37 @@ const results = computed(() => search.results.value)
 const searching = computed(() => search.searching.value)
 const recent = computed(() => search.recent.value)
 
-const step = ref<'symbol' | 'form'>('symbol')
+const step = ref<'symbol' | 'form' | 'cash'>('symbol')
 const selected = ref<SearchResult | null>(null)
 const manualSymbol = ref('')
 const quantity = ref('')
 const averageCost = ref('')
 const currency = ref('USD')
+const cashName = ref('')
 const notes = ref('')
 const isCash = ref(false) // new cash flag
 const submitting = ref(false)
 const qtyError = ref('')
 const costError = ref('')
+const nameError = ref('')
 const selectedSymbol = ref('')
+
+const CASH_CURRENCIES = ['USD', 'IDR', 'SGD']
+const BANK_OPTIONS = [
+  'BCA Tabungan',
+  'BCA Jenius',
+  'Mandiri',
+  'BRI',
+  'BNI',
+  'CIMB Niaga',
+  'SeaBank',
+  'Jago',
+  'DBS',
+  'UOB',
+  'Permata',
+  'Payoneer',
+  'Wise',
+]
 
 const activeCategory = ref<RecommendationCategory['key']>('popular')
 
@@ -72,6 +91,7 @@ watch(
   (open) => {
     if (!open) return
     if (props.holding) {
+      const isCashH = (props.holding.isCash ?? false) || props.holding.symbol.startsWith('CASH-')
       selectedSymbol.value = props.holding.symbol
       selected.value = {
         symbol: props.holding.symbol,
@@ -82,11 +102,13 @@ watch(
       quantity.value = String(props.holding.quantity)
       averageCost.value = String(props.holding.averageCost)
       currency.value = props.holding.currency ?? (props.holding.symbol.endsWith('.JK') ? 'IDR' : 'USD')
+      cashName.value = isCashH ? (props.holding.name ?? cashNameFromSymbol(props.holding.symbol)) : ''
       notes.value = props.holding.notes ?? ''
       isCash.value = props.holding.isCash ?? false
-      step.value = 'form'
+      step.value = isCashH ? 'cash' : 'form'
       manualSymbol.value = props.holding.symbol
-      quotes.refresh([props.holding.symbol])
+      nameError.value = ''
+      if (!isCashH) quotes.refresh([props.holding.symbol])
     } else {
       selectedSymbol.value = ''
       selected.value = null
@@ -94,10 +116,12 @@ watch(
       quantity.value = ''
       averageCost.value = ''
       currency.value = 'USD'
+      cashName.value = ''
       notes.value = ''
       isCash.value = false
       step.value = 'symbol'
       activeCategory.value = 'popular'
+      nameError.value = ''
     }
     search.onInput('')
   },
@@ -144,6 +168,47 @@ function back() {
   step.value = 'symbol'
 }
 
+function openCash() {
+  selectedSymbol.value = ''
+  selected.value = null
+  manualSymbol.value = ''
+  quantity.value = ''
+  averageCost.value = '1'
+  currency.value = 'USD'
+  cashName.value = ''
+  notes.value = ''
+  isCash.value = true
+  step.value = 'cash'
+  nameError.value = ''
+  search.close()
+}
+
+function cashSymbol(): string {
+  const name = cashName.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 14)
+  return `CASH-${name || 'CASH'}-${currency.value.toUpperCase()}`
+}
+
+function cashNameFromSymbol(symbol: string): string {
+  const m = symbol.match(/^CASH-(.+)-([A-Z]{3})$/)
+  return m ? m[1] : ''
+}
+
+function validateCash(): boolean {
+  qtyError.value = ''
+  nameError.value = ''
+  let ok = true
+  if (!cashName.value.trim()) {
+    nameError.value = 'Enter an account name (e.g. bank).'
+    ok = false
+  }
+  const q = Number(quantity.value)
+  if (!Number.isFinite(q) || q <= 0) {
+    qtyError.value = 'Amount must be greater than 0.'
+    ok = false
+  }
+  return ok
+}
+
 function sanitizeDecimal(raw: string): string {
   const cleaned = String(raw).replace(/,/g, '.').replace(/[^0-9.]/g, '')
   const dotIndex = cleaned.indexOf('.')
@@ -181,25 +246,29 @@ function validate(): boolean {
 }
 
 async function save() {
-  if (!validate()) return
+  const isCashH = step.value === 'cash'
+  if (isCashH) {
+    if (!validateCash()) return
+  } else if (!validate()) return
   submitting.value = true
   try {
     const parsed = holdingSchema.omit({ id: true, createdAt: true }).parse({
-      symbol: selectedSymbol.value,
+      symbol: isCashH ? cashSymbol() : selectedSymbol.value,
       quantity: Number(quantity.value),
       averageCost: isCash.value ? 1 : Number(averageCost.value),
       currency: currency.value,
       notes: notes.value || undefined,
-      isCash: isCash.value,
+      isCash: isCashH || isCash.value,
+      ...(isCashH ? { name: cashName.value.trim() } : {}),
     })
 
     if (isEdit.value && props.holding) {
       portfolio.updateHolding(props.holding.id, parsed)
-      toast.success(`${parsed.symbol} updated`)
+      toast.success(isCashH ? `${parsed.name ?? 'Cash'} updated` : `${parsed.symbol} updated`)
       emit('saved', { ...props.holding, ...parsed }, false)
     } else {
       const holding = portfolio.addHolding(parsed)
-      toast.success(`${parsed.symbol} added to portfolio`)
+      toast.success(isCashH ? `${parsed.name ?? 'Cash'} added to portfolio` : `${parsed.symbol} added to portfolio`)
       emit('saved', holding, true)
     }
     emit('close')
@@ -240,6 +309,26 @@ async function save() {
         <div class="mt-3 max-h-80 overflow-y-auto no-scrollbar space-y-3" role="listbox" aria-label="Asset options">
           <!-- Curated Categories -->
           <template v-if="!query.trim()">
+            <!-- Add Cash shortcut -->
+            <button
+              type="button"
+              class="w-full flex items-center justify-between gap-2 rounded-2xl border border-dashed border-emerald-600/40 bg-emerald-500/5 p-3.5 text-left transition-colors hover:bg-emerald-500/10 cursor-pointer"
+              @click="openCash"
+            >
+              <span class="flex items-center gap-2.5 min-w-0">
+                <span class="size-9 shrink-0 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                  <Wallet class="size-4" aria-hidden="true" />
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-xs font-semibold leading-tight">Cash / Bank Balance</span>
+                  <span class="block text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                    Manual entry in USD, IDR, SGD
+                  </span>
+                </span>
+              </span>
+              <ChevronRight class="size-4 text-muted-foreground shrink-0" aria-hidden="true" />
+            </button>
+
             <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 pt-0.5">
               <button
                 v-for="cat in RECOMMENDED_CATEGORIES"
@@ -355,6 +444,111 @@ async function save() {
             </button>
           </div>
         </div>
+      </template>
+
+      <!-- Cash Form -->
+      <template v-else-if="step === 'cash'">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
+          @click="back"
+        >
+          <ArrowLeft class="size-3.5" aria-hidden="true" />
+          Back
+        </button>
+
+        <!-- Account header -->
+        <div class="flex items-center justify-between rounded-2xl bg-muted/40 p-3 mt-1 border border-border/40">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="size-9 shrink-0 rounded-full bg-muted border border-border/60 text-muted-foreground font-semibold flex items-center justify-center uppercase text-xs truncate px-1">
+              {{ (cashName.trim() || 'Cash').slice(0, 2) }}
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold leading-tight truncate">{{ cashName.trim() || 'Cash balance' }}</p>
+              <p class="text-xs text-muted-foreground truncate leading-tight mt-0.5">Manual cash entry</p>
+            </div>
+          </div>
+          <span class="rounded-full bg-background px-2.5 py-0.5 text-[11px] font-medium text-foreground border border-border/60">
+            {{ currency }}
+          </span>
+        </div>
+
+        <form class="space-y-4 mt-3" @submit.prevent="save">
+          <!-- Account name -->
+          <div>
+            <UiLabel for="fv-name" class="text-xs font-medium">Account Name</UiLabel>
+            <UiInput
+              id="fv-name"
+              v-model="cashName"
+              class="mt-1.5 h-10 rounded-xl"
+              placeholder="e.g. BCA Tabungan"
+              autofocus
+              :aria-describedby="nameError ? 'fv-name-err' : undefined"
+            />
+            <datalist id="bank-options">
+              <option v-for="b in BANK_OPTIONS" :key="b" :value="b" />
+            </datalist>
+            <p v-if="nameError" id="fv-name-err" class="mt-1 text-xs text-destructive font-medium">
+              {{ nameError }}
+            </p>
+          </div>
+
+          <!-- Currency -->
+          <div>
+            <UiLabel class="text-xs font-medium">Currency</UiLabel>
+            <div class="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-muted/40 p-1">
+              <button
+                v-for="c in CASH_CURRENCIES"
+                :key="c"
+                type="button"
+                class="h-9 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                :class="currency === c ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'"
+                @click="currency = c"
+              >
+                {{ c }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Amount -->
+          <div>
+            <UiLabel for="fv-amount" class="text-xs font-medium">Amount</UiLabel>
+            <UiInput
+              id="fv-amount"
+              :model-value="quantity"
+              type="text"
+              inputmode="decimal"
+              placeholder="e.g. 25,000,000"
+              class="mt-1.5 h-10 rounded-xl"
+              :aria-describedby="qtyError ? 'fv-amount-err' : undefined"
+              @update:model-value="quantity = sanitizeDecimal(String($event))"
+            />
+            <p v-if="qtyError" id="fv-amount-err" class="mt-1 text-xs text-destructive font-medium">
+              {{ qtyError }}
+            </p>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <UiLabel for="fv-cash-notes" class="text-xs font-medium">Notes (optional)</UiLabel>
+            <UiInput
+              id="fv-cash-notes"
+              v-model="notes"
+              placeholder="e.g. Emergency fund"
+              class="mt-1.5 h-10 rounded-xl"
+            />
+          </div>
+
+          <UiDialogFooter class="mt-5">
+            <button
+              type="submit"
+              class="h-11 rounded-full w-full bg-foreground text-background font-medium text-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Loader2 v-if="submitting" class="size-3.5 animate-spin" aria-hidden="true" />
+              {{ isEdit ? 'Save' : 'Add Cash' }}
+            </button>
+          </UiDialogFooter>
+        </form>
       </template>
 
       <!-- Step 2: Position Form -->

@@ -50,6 +50,17 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
     notes: 'Bank Central Asia · IDX equity',
     createdAt: '2026-02-20T00:00:00.000Z',
   },
+  {
+    id: 'demo-cash-bca',
+    symbol: 'CASH-BCA-IDR',
+    name: 'BCA Tabungan',
+    quantity: 25000000,
+    averageCost: 1,
+    currency: 'IDR',
+    notes: 'Cash reserve',
+    isCash: true,
+    createdAt: '2026-03-01T00:00:00.000Z',
+  },
 ]
 
 const DEMO_CLEARED_KEY = 'fastvest:demo_cleared'

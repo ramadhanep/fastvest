@@ -211,7 +211,10 @@ function onTouchEnd() {
   if (!pulling.value) return
   pulling.value = false
   if (pullReady.value) {
-    refresh(holdings.value.map((h) => h.symbol))
+    const symbols = holdings.value
+      .filter((h) => !h.isCash && !h.symbol.startsWith('CASH-'))
+      .map((h) => h.symbol)
+    if (symbols.length) refresh(symbols)
   }
   pullY.value = 0
 }

@@ -4,6 +4,11 @@ export function getAssetLogoUrl(symbol: string): string | null {
   if (!symbol) return null
   const s = symbol.trim().toUpperCase()
 
+  // Cash accounts (e.g. CASH-BCA-USD) -> initials only
+  if (s.startsWith('CASH-')) {
+    return null
+  }
+
   // IDX stocks (e.g. BBCA.JK -> BBCA)
   if (s.endsWith('.JK')) {
     const name = s.replace('.JK', '')
@@ -26,6 +31,12 @@ export function getAssetLogoUrl(symbol: string): string | null {
 }
 
 export function getSymbolInitials(symbol: string): string {
+  // Cash accounts embed the bank name (e.g. CASH-BCA-USD -> "BC")
+  if (symbol.startsWith('CASH-')) {
+    const m = symbol.match(/^CASH-(.+)-([A-Z]{3})$/)
+    if (m && m[1]) return m[1].slice(0, 2)
+    return symbol.replace('CASH-', '').slice(0, 2) || 'CA'
+  }
   const clean = symbol.replace('.JK', '').replace('-USD', '').replace('^', '')
   return clean.slice(0, 2)
 }

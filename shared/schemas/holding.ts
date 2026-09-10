@@ -2,10 +2,11 @@ import { z } from 'zod'
 
 export const holdingSchema = z.object({
   id: z.string().min(1),
-  symbol: z.string().trim().min(1).max(20).transform((s) => s.toUpperCase()),
+  symbol: z.string().trim().min(1).max(30).transform((s) => s.toUpperCase()),
   quantity: z.number().positive('Quantity must be greater than 0'),
   averageCost: z.number().min(0, 'Average cost cannot be negative'),
   currency: z.string().optional().default('USD'),
+  name: z.string().optional(),
   notes: z.string().optional(),
   createdAt: z.string().datetime().optional(),
   isCash: z.boolean().optional().default(false),
