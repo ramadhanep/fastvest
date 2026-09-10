@@ -95,6 +95,9 @@ let touchStartY = 0
 let touchMoved = false  // true if finger moved enough in any direction (scroll or swipe)
 let swiping = false     // true only if horizontal swipe detected
 
+const dragX = ref(0)
+const draggingId = ref<string | null>(null)
+
 function onRowTouchStart(e: TouchEvent, id: string) {
   if (swipedId.value && swipedId.value !== id) { swipedId.value = null }
   const t = e.touches[0]
@@ -103,9 +106,10 @@ function onRowTouchStart(e: TouchEvent, id: string) {
   touchStartY = t.clientY
   touchMoved = false
   swiping = false
+  draggingId.value = null
 }
 
-function onRowTouchMove(e: TouchEvent) {
+function onRowTouchMove(e: TouchEvent, id: string) {
   const t = e.touches[0]
   if (!t) return
   const dx = t.clientX - touchStartX
@@ -118,24 +122,38 @@ function onRowTouchMove(e: TouchEvent) {
   // Horizontal swipe detection (left-swipe to reveal actions)
   if (!swiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
     swiping = true
+    draggingId.value = id
   }
+  if (swiping && draggingId.value === id) {
+    // Rubber-band: resistance past -140 (max reveal) and past 0 (right stretch)
+    const base = swipedId.value === id ? -120 : 0
+    let x = base + dx
+    if (x < -140) x = -140 - (x + 140) * 0.35
+    else if (x > 0) x = x * 0.35
+    dragX.value = x
+  }
+}
+
+function rowTransform(id: string): string {
+  if (draggingId.value === id) return `${dragX.value}px`
+  return swipedId.value === id ? '-120px' : '0px'
 }
 
 function onRowTouchEnd(e: TouchEvent, h: Holding) {
   const t = e.changedTouches[0]
-  if (!t) { swiping = false; touchMoved = false; return }
+  if (!t) { swiping = false; touchMoved = false; draggingId.value = null; return }
   const dx = t.clientX - touchStartX
 
-  if (swiping && dx < -50) {
-    // Left swipe: reveal action buttons
-    swipedId.value = h.id
+  if (swiping) {
+    // Spring snap: open if dragged past -70 OR flicked past -50
+    const shouldOpen = dragX.value < -70 || dx < -50
+    swipedId.value = shouldOpen ? h.id : null
+    draggingId.value = null
+    dragX.value = 0
   } else if (!touchMoved) {
     // Clean tap (no movement): navigate or close swiped row
     if (swipedId.value === h.id) { swipedId.value = null }
     else { openDetail(h) }
-  } else if (swiping) {
-    // Horizontal swipe but not far enough: close any open row
-    swipedId.value = null
   }
   // Vertical scroll (touchMoved && !swiping): do nothing, let scroll happen
 
@@ -201,9 +219,10 @@ function onRowClick(h: Holding) {
     <!-- Holdings List -->
     <div class="mt-3 -mx-4 sm:mx-0 rounded-none sm:rounded-2xl bg-card divide-y divide-border/30 overflow-hidden">
       <div
-        v-for="row in rows"
+        v-for="(row, i) in rows"
         :key="row.holding.id"
-        class="relative overflow-hidden"
+        class="relative overflow-hidden row-stagger contain-content"
+        :style="{ animationDelay: `${Math.min(i, 8) * 45}ms` }"
         :class="{ 'bg-muted/15': filtering === row.holding.symbol }"
       >
         <!-- Action buttons (revealed on swipe) -->
@@ -226,11 +245,12 @@ function onRowClick(h: Holding) {
 
         <!-- Swipeable card content -->
         <div
-          class="relative flex items-center justify-between gap-3 px-4 py-3.5 bg-card transition-transform duration-200 ease-out will-change-transform"
-          :style="{ transform: `translateX(${swipedId === row.holding.id ? '-120px' : '0'})` }"
+          class="relative flex items-center justify-between gap-3 px-4 py-3.5 bg-card transition-transform duration-300 ease-out will-change-transform"
+          :class="{ 'swipe-no-transition': draggingId === row.holding.id }"
+          :style="{ transform: `translateX(${rowTransform(row.holding.id)})` }"
           @click="onRowClick(row.holding)"
           @touchstart.passive="onRowTouchStart($event, row.holding.id)"
-          @touchmove.passive="onRowTouchMove"
+          @touchmove.passive="onRowTouchMove($event, row.holding.id)"
           @touchend="onRowTouchEnd($event, row.holding)"
         >
           <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -286,3 +306,9 @@ function onRowClick(h: Holding) {
     </div>
   </section>
 </template>
+
+<style scoped>
+.swipe-no-transition {
+  transition: none !important;
+}
+</style>
