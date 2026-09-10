@@ -25,16 +25,28 @@ onMounted(() => {
 
 const isDark = computed(() => colorMode.value === 'dark')
 
+// Scroll-aware glass: thickens once content is scrolled (iOS nav effect)
+const scrolled = ref(false)
+onMounted(() => {
+  const onScroll = () => {
+    scrolled.value = window.scrollY > 12
+  }
+  onScroll()
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onUnmounted(() => window.removeEventListener('scroll', onScroll))
+})
+
 const glassStyle = computed(() =>
-  props.brandColor ? { backgroundColor: `${props.brandColor}22` } : {},
+  props.brandColor ? { backgroundColor: `${props.brandColor}${scrolled.value ? '30' : '1c'}` } : {},
 )
 </script>
 
 <template>
   <header class="fixed inset-x-0 top-3 z-40 flex justify-center px-4 pointer-events-none">
-    <div
-      class="w-full max-w-md pointer-events-auto rounded-[1.75rem] bg-white/40 dark:bg-white/[0.06] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden p-1.5 transition-all duration-300 ease-out"
+    <LiquidGlass
       :style="glassStyle"
+      :dense="scrolled"
+      class="w-full max-w-md pointer-events-auto"
     >
       <div class="flex items-center justify-between gap-2">
         <!-- Left: Brand or Back Button -->
@@ -81,12 +93,33 @@ const glassStyle = computed(() =>
             class="rounded-full bg-white/50 dark:bg-white/10 size-12 shrink-0 inline-flex items-center justify-center cursor-pointer ios-press transition-colors hover:bg-white/70 dark:hover:bg-white/20 text-muted-foreground hover:text-foreground"
             @click="colorMode.preference = isDark ? 'light' : 'dark'"
           >
-            <Sun v-if="mounted && isDark" class="size-4" />
-            <Moon v-else class="size-4" />
+            <Transition name="theme-rotate" mode="out-in">
+              <Sun v-if="mounted && isDark" key="sun" class="size-4" />
+              <Moon v-else key="moon" class="size-4" />
+            </Transition>
           </button>
         </div>
       </div>
-    </div>
+    </LiquidGlass>
   </header>
   <div class="h-20" aria-hidden="true" />
 </template>
+
+<style scoped>
+.theme-rotate-enter-active,
+.theme-rotate-leave-active {
+  transition:
+    transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 200ms ease;
+}
+
+.theme-rotate-enter-from {
+  transform: rotate(-120deg) scale(0.5);
+  opacity: 0;
+}
+
+.theme-rotate-leave-to {
+  transform: rotate(120deg) scale(0.5);
+  opacity: 0;
+}
+</style>

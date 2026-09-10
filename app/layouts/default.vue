@@ -52,11 +52,8 @@
           class="w-full max-w-md pointer-events-auto fab-slide"
           :class="{ 'fab-slide--hidden': !fabVisible }"
         >
-          <!-- Liquid glass container — mirrors AppHeader outer div exactly -->
-          <div
-            class="w-full rounded-[1.75rem] bg-white/40 dark:bg-white/[0.06] backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] overflow-hidden p-1.5 transition-[background-color] duration-500 ease-out"
-            :style="glassStyle"
-          >
+          <!-- Liquid glass container -->
+          <LiquidGlass :style="glassStyle" class="w-full pointer-events-auto">
             <button
               type="button"
               aria-label="Add Portfolio"
@@ -66,7 +63,7 @@
               <Plus class="size-4 shrink-0" />
               <span class="fab-label font-medium tracking-tight">Add Portfolio</span>
             </button>
-          </div>
+          </LiquidGlass>
         </div>
       </div>
     </Transition>
