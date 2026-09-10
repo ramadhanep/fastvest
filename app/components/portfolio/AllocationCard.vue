@@ -1,18 +1,8 @@
 <script setup lang="ts">
 import type { Holding, Quote } from '#shared/types'
 import { calculateHoldingMetrics } from '~/utils/calculations'
-import { brandColorFor } from '~/utils/brand-colors'
+import { brandColorFor, BRAND_FALLBACK } from '~/utils/brand-colors'
 import { useExchangeRates } from '~/composables/useExchangeRates'
-
-const FALLBACK_COLORS = [
-  '#444444',
-  '#0092BC',
-  '#76B900',
-  '#00A1F1',
-  '#FF9900',
-  '#0064E0',
-  '#F7931A',
-]
 
 const props = withDefaults(
   defineProps<{
@@ -41,7 +31,7 @@ const segments = computed<{ label: string; value: number; color: string }[]>(() 
     return {
       label: h.symbol,
       value: mv,
-      color: brand ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length] ?? '#444444',
+      color: brand ?? BRAND_FALLBACK,
     }
   }).filter((s) => s.value > 0)
 })
@@ -53,33 +43,16 @@ function toggle(symbol: string) {
   else emit('select', symbol)
 }
 
-// ─── Smooth accordion ──────────────────────────────────────────────────────
+// ─── Smooth accordion (grid-template-rows, GPU-friendly — no layout thrash) ─
 const isOpen = ref(false)
-const bodyEl = ref<HTMLElement | null>(null)
-const bodyHeight = ref(0)
 
 function onToggle() {
   isOpen.value = !isOpen.value
 }
-
-// Measure real height so we can animate max-height precisely
-watch(isOpen, (open) => {
-  if (open && bodyEl.value) {
-    // Temporarily unclip to measure, then re-clip via max-height
-    bodyHeight.value = bodyEl.value.scrollHeight
-  }
-})
-
-// Re-measure if content changes (e.g. segments loaded)
-watch(segments, () => {
-  if (isOpen.value && bodyEl.value) {
-    bodyHeight.value = bodyEl.value.scrollHeight
-  }
-})
 </script>
 
 <template>
-  <div class="rounded-2xl bg-card p-5">
+  <div class="rounded-2xl bg-card p-5 card-press elev-1 contain-layout">
     <!-- Header row — acts as the toggle trigger -->
     <button
       type="button"
@@ -105,39 +78,38 @@ watch(segments, () => {
 
     <!-- Animated body -->
     <div
-      class="allocation-body overflow-hidden"
-      :style="{
-        maxHeight: isOpen ? bodyHeight + 'px' : '0px',
-        opacity: isOpen ? 1 : 0,
-      }"
+      class="allocation-body grid"
+      :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
     >
-      <div ref="bodyEl" class="mt-2 flex flex-col items-center gap-3">
-        <div class="relative">
-          <Donut :segments="segments" :size="180" />
-        </div>
-        <div class="flex flex-wrap items-center justify-center gap-1.5 max-w-xs">
-          <button
-            v-for="s in segments"
-            :key="s.label"
-            type="button"
-            class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors cursor-pointer"
-            :class="selectedSymbol === s.label ? 'bg-muted' : 'bg-muted/40 hover:bg-muted'"
-            :aria-pressed="selectedSymbol === s.label"
-            @click="toggle(s.label)"
-          >
-            <span class="size-2 rounded-full" :style="{ backgroundColor: s.color }" aria-hidden="true" />
-            <span class="text-[11px] font-medium text-foreground">{{ s.label }}</span>
-          </button>
-        </div>
-        <div v-if="selectedSymbol" class="mt-2 flex items-center justify-end w-full">
-          <button
-            type="button"
-            class="size-6 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-            aria-label="Clear filter"
-            @click="emit('select', null)"
-          >
-            <svg viewBox="0 0 24 24" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-          </button>
+      <div class="min-h-0 overflow-hidden">
+        <div class="flex flex-col items-center gap-3" :class="isOpen ? 'mt-2 opacity-100' : 'opacity-0'">
+          <div class="relative">
+            <Donut :segments="segments" :size="180" :animate="isOpen" />
+          </div>
+          <div class="flex flex-wrap items-center justify-center gap-1.5 max-w-xs">
+            <button
+              v-for="s in segments"
+              :key="s.label"
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors cursor-pointer"
+              :class="selectedSymbol === s.label ? 'bg-muted' : 'bg-muted/40 hover:bg-muted'"
+              :aria-pressed="selectedSymbol === s.label"
+              @click="toggle(s.label)"
+            >
+              <span class="size-2 rounded-full" :style="{ backgroundColor: s.color }" aria-hidden="true" />
+              <span class="text-[11px] font-medium text-foreground">{{ s.label }}</span>
+            </button>
+          </div>
+          <div v-if="selectedSymbol" class="mt-2 flex items-center justify-end w-full">
+            <button
+              type="button"
+              class="size-6 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+              aria-label="Clear filter"
+              @click="emit('select', null)"
+            >
+              <svg viewBox="0 0 24 24" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -146,10 +118,11 @@ watch(segments, () => {
 
 <style scoped>
 .allocation-body {
-  /* GPU-composited: only max-height + opacity change — no paint */
-  transition:
-    max-height 600ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 400ms ease;
-  will-change: max-height, opacity;
+  /* GPU-composited height animation via grid-template-rows — no measurement, no layout thrash */
+  transition: grid-template-rows 600ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: grid-template-rows;
+}
+.allocation-body > div > div {
+  transition: opacity 380ms ease 120ms;
 }
 </style>

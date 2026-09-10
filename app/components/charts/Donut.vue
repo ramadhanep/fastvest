@@ -8,6 +8,7 @@ export interface DonutSegment {
 const props = defineProps<{
   segments: DonutSegment[]
   size?: number
+  animate?: boolean
 }>()
 
 const size = computed(() => props.size ?? 160)
@@ -20,6 +21,7 @@ const total = computed(() => props.segments.reduce((s, p) => s + p.value, 0))
 interface Arc {
   d: string
   color: string
+  length: number
 }
 
 const arcs = computed<Arc[]>(() => {
@@ -36,6 +38,7 @@ const arcs = computed<Arc[]>(() => {
     return {
       color: seg.color,
       d: `M ${s + c * Math.cos(startA)} ${s + c * Math.sin(startA)} A ${c} ${c} 0 ${large} 1 ${s + c * Math.cos(endA)} ${s + c * Math.sin(endA)}`,
+      length: fraction * circumference.value,
     }
   })
 })
@@ -54,9 +57,34 @@ const arcs = computed<Arc[]>(() => {
       :key="i"
       :d="arc.d"
       :stroke="arc.color"
-      class="fill-none"
+      class="fill-none donut-arc"
+      :class="{ 'donut-arc--animate': animate }"
       :stroke-width="stroke"
       stroke-linecap="round"
+      :style="{
+        '--dash': `${arc.length}`,
+        animationDelay: animate ? `${i * 90}ms` : undefined,
+      }"
     />
   </svg>
 </template>
+
+<style scoped>
+.donut-arc {
+  stroke-dasharray: var(--dash);
+  stroke-dashoffset: var(--dash);
+}
+
+.donut-arc--animate {
+  animation: donut-dash-in 700ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes donut-dash-in {
+  from {
+    stroke-dashoffset: var(--dash);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+</style>
