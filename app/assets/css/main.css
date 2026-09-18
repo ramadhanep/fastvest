@@ -132,6 +132,23 @@
   }
 }
 
+/* Typography — serif (default) vs sans-serif mode */
+:root[data-font='sans'] body,
+:root[data-font='sans'] .font-display,
+:root[data-font='sans'] .font-serif,
+:root[data-font='sans'] .font-heading {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Density — compact reduces the global spacing scale */
+:root {
+  --spacing: 0.25rem;
+}
+:root[data-density='compact'] {
+  --spacing: 0.2rem;
+}
+
 @layer utilities {
   /* iOS 60fps tactile touch feedback with spring curve */
   .ios-press {

@@ -38,6 +38,7 @@ describe('storage layer', () => {
       'preferences',
       'quoteCache',
       'recentSearches',
+      'watchlist',
     ])
   })
 })

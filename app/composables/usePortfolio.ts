@@ -3,6 +3,7 @@ import type { Holding, PortfolioFile } from '#shared/types'
 import { kv, storageGet, storageSet, storageRemove } from '~/lib/storage'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
+import { useWatchlist } from './useWatchlist'
 
 export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
   {
@@ -136,6 +137,7 @@ export function usePortfolio() {
     if (holdings.value.length === 0) {
       isDemoPortfolio.value = false
       if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
+      useWatchlist().resetDemoWatchlist()
     }
     persist()
   }
@@ -144,6 +146,7 @@ export function usePortfolio() {
     holdings.value = []
     isDemoPortfolio.value = false
     if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
+    useWatchlist().resetDemoWatchlist()
     persist()
     toast.info('Sample portfolio cleared. Starting with empty portfolio.')
   }
@@ -156,6 +159,7 @@ export function usePortfolio() {
       localStorage.removeItem(DEMO_CLEARED_KEY)
       localStorage.removeItem(DEMO_DISMISSED_KEY)
     }
+    useWatchlist().loadDemoWatchlist()
     persist()
     toast.success('Sample portfolio loaded.')
   }
@@ -197,6 +201,7 @@ export function usePortfolio() {
           }))
           isDemoPortfolio.value = false
           if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
+          useWatchlist().resetDemoWatchlist()
           persist()
           resolve({ ok: true })
         } catch {
@@ -212,6 +217,7 @@ export function usePortfolio() {
     holdings.value = []
     isDemoPortfolio.value = false
     if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
+    useWatchlist().resetDemoWatchlist()
     storageRemove(kv.portfolio)
   }
 

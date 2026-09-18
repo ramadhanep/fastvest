@@ -30,6 +30,7 @@ export default defineNuxtConfig({
     provider: 'google',
     families: [
       { name: 'Domine', weights: [400, 500, 600, 700] },
+      { name: 'Inter', weights: [400, 500, 600, 700] },
     ],
   },
   vite: {

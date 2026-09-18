@@ -194,6 +194,9 @@ onMounted(() => {
           </UiButton>
         </div>
 
+        <!-- Performance Card -->
+        <PerformanceCard :holdings="holdings" :get-quote="getQuote" />
+
         <!-- Allocation Card -->
         <AllocationCard
           :holdings="holdings"
@@ -213,6 +216,9 @@ onMounted(() => {
           @edit="openEdit"
           @remove="requestRemove"
         />
+
+        <!-- Watchlist -->
+        <WatchlistCard />
       </div>
 
       <!-- Status footer -->

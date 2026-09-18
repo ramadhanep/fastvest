@@ -26,6 +26,7 @@ const emit = defineEmits<{
 const search = useSymbolSearch()
 const portfolio = usePortfolio()
 const quotes = useQuotes()
+const addModal = useAddHoldingModal()
 
 const query = computed(() => search.query.value)
 const results = computed(() => search.results.value)
@@ -122,6 +123,15 @@ watch(
       step.value = 'symbol'
       activeCategory.value = 'popular'
       nameError.value = ''
+      const p = addModal.takePrefill()
+      if (p) {
+        selected.value = { symbol: p.symbol, name: p.name ?? p.symbol, exchange: '', type: '' }
+        selectedSymbol.value = p.symbol
+        manualSymbol.value = p.symbol
+        currency.value = p.symbol.endsWith('.JK') ? 'IDR' : 'USD'
+        step.value = 'form'
+        quotes.refresh([p.symbol])
+      }
     }
     search.onInput('')
   },

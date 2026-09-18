@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Pencil, Trash2, Loader2 } from '@lucide/vue'
+import { Pencil, Trash2, Loader2, Plus } from '@lucide/vue'
 import type { ChartData, ChartPoint, Holding } from '#shared/types'
 import { calculateHoldingMetrics } from '~/utils/calculations'
 import { formatCurrency, formatPercent, formatNumber, formatQuantity } from '~/utils/format'
@@ -9,6 +9,8 @@ import { brandColorFor } from '~/utils/brand-colors'
 const route = useRoute()
 const router = useRouter()
 const { holdings, removeHolding } = usePortfolio()
+const { has: hasWatch } = useWatchlist()
+const addModal = useAddHoldingModal()
 const quotes = useQuotes()
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 
@@ -16,15 +18,25 @@ const symbol = computed(() => String(route.params.symbol ?? ''))
 const holding = computed<Holding | null>(() =>
   holdings.value.find((h) => h.symbol === symbol.value) ?? null,
 )
+const isWatch = computed(() => !holding.value && hasWatch(symbol.value))
 const isCashSymbol = computed(() => !!holding.value?.symbol.startsWith('CASH-'))
 
 const getQuote = (s: string) => quotes.getQuote(s)
-const quote = computed(() => (holding.value ? getQuote(holding.value.symbol) : null))
+const quote = computed(() =>
+  holding.value
+    ? getQuote(holding.value.symbol)
+    : getQuote(symbol.value),
+)
 
 useHead({ title: () => symbol.value })
 
-if (!holding.value) {
+if (!holding.value && !isWatch.value) {
   router.replace('/')
+}
+
+function trackInPortfolio() {
+  addModal.openWith(symbol.value)
+  void router.push('/')
 }
 
 const metrics = computed(() =>
@@ -75,7 +87,7 @@ const chartError = ref(false)
 let chartRequest = 0
 
 watch(
-  () => holding.value?.symbol,
+  () => symbol.value,
   (s) => {
     if (s && !isCashSymbol.value) loadChart(s, '6m')
   },
@@ -83,7 +95,7 @@ watch(
 )
 
 watch(range, (r) => {
-  if (holding.value && !isCashSymbol.value) loadChart(holding.value.symbol, r)
+  if (symbol.value && !isCashSymbol.value) loadChart(symbol.value, r)
 })
 
 const chartPoints = computed<ChartPoint[]>(() => chartData.value?.points ?? [])
@@ -111,7 +123,10 @@ const accentStyle = computed(() => {
 
 const editorOpen = ref(false)
 const deleting = ref(false)
-onMounted(ensureRates)
+onMounted(() => {
+  ensureRates()
+  if (isWatch.value && !quotes.getQuote(symbol.value)) quotes.refresh([symbol.value])
+})
 
 function confirmDelete() {
   if (holding.value) {
@@ -123,16 +138,16 @@ function confirmDelete() {
 
 <template>
   <div>
-    <div v-if="holding" class="pb-12 px-4 sm:px-0">
+    <div v-if="holding || isWatch" class="pb-12 px-4 sm:px-0">
       <!-- Header card -->
       <div class="mt-2 rounded-2xl p-5 backdrop-blur-xl transition-all card-press elev-2" :style="accentStyle">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <AssetIcon :symbol="holding.symbol" size="lg" />
+            <AssetIcon :symbol="symbol" size="lg" />
             <div>
-              <p class="text-sm font-semibold tracking-tight">{{ holding.name ?? holding.symbol }}</p>
+              <p class="text-sm font-semibold tracking-tight">{{ holding?.name ?? quote?.name ?? symbol }}</p>
               <p class="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[160px]">
-                {{ isCashSymbol ? `Cash balance · ${holding.currency ?? ''}` : (quote?.name ?? holding.notes ?? '') }}
+                {{ isCashSymbol ? `Cash balance · ${holding?.currency ?? ''}` : (quote?.name ?? holding?.notes ?? (isWatch ? 'Watching · not in portfolio' : '')) }}
               </p>
             </div>
           </div>
@@ -141,7 +156,7 @@ function confirmDelete() {
               v-if="isCashSymbol"
               class="font-display text-[1.75rem] font-semibold tabular-nums leading-none"
             >
-              {{ formatCurrency(holding.quantity, holding.currency ?? 'USD') }}
+              {{ formatCurrency(holding?.quantity, holding?.currency ?? 'USD') }}
             </div>
             <div v-else-if="quote" class="font-display text-[1.75rem] font-semibold tabular-nums leading-none">
               {{ formatCurrency(quote.price, quote.currency ?? 'USD') }}
@@ -156,7 +171,7 @@ function confirmDelete() {
           </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-3 gap-2">
+        <div v-if="holding" class="mt-4 grid grid-cols-3 gap-2">
           <div>
             <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? 'Amount' : 'Shares' }}</p>
             <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? formatCurrency(holding.quantity, holding.currency ?? 'USD') : formatQuantity(holding.quantity) }}</p>
@@ -218,7 +233,7 @@ function confirmDelete() {
       </div>
 
       <!-- Metrics -->
-      <div class="mt-4 rounded-2xl bg-card divide-y divide-border/40 overflow-hidden card-press elev-1">
+      <div v-if="holding" class="mt-4 rounded-2xl bg-card divide-y divide-border/40 overflow-hidden card-press elev-1">
         <div class="flex items-center justify-between px-4 py-3">
           <span class="text-xs text-muted-foreground font-medium">Invested</span>
           <span class="text-sm font-semibold tabular-nums">{{ metrics ? formatCurrency(metrics.costBasis, holding.currency ?? 'USD') : '—' }}</span>
@@ -247,7 +262,20 @@ function confirmDelete() {
       </div>
 
       <!-- Actions -->
-      <div class="mt-6 grid grid-cols-2 gap-3">
+      <div v-if="isWatch" class="mt-6">
+        <button
+          type="button"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground text-background h-12 text-sm font-semibold cursor-pointer ios-press"
+          @click="trackInPortfolio"
+        >
+          <Plus class="size-4" aria-hidden="true" />
+          Track in Portfolio
+        </button>
+        <p class="mt-2 text-center text-[11px] text-muted-foreground">
+          Add quantity and cost to start tracking this symbol.
+        </p>
+      </div>
+      <div v-else-if="holding" class="mt-6 grid grid-cols-2 gap-3">
         <button
           type="button"
           class="inline-flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card h-12 text-sm font-semibold cursor-pointer ios-press active:bg-muted/40"

@@ -8,7 +8,7 @@ useHead({ title: 'Fastvest · Settings' })
 
 const { holdings, exportPortfolio, importPortfolio, resetPortfolio, loadDemoPortfolio } = usePortfolio()
 const canExport = computed(() => holdings.value.length > 0)
-const { preferences, setTheme, setRefreshInterval } = usePreferences()
+const { preferences, setTheme, setRefreshInterval, setFontFamily, setCompactLayout } = usePreferences()
 const { online } = useConnection()
 const { clearCache } = useQuotes()
 
@@ -29,6 +29,16 @@ const INTERVALS = [
   { value: 60, label: '1m' },
   { value: 120, label: '2m' },
   { value: 300, label: '5m' },
+] as const
+
+const FONT_OPTIONS = [
+  { value: 'serif', label: 'Serif' },
+  { value: 'sans', label: 'Sans' },
+] as const
+
+const DENSITY_OPTIONS = [
+  { value: false, label: 'Comfortable' },
+  { value: true, label: 'Compact' },
 ] as const
 
 async function onFilePicked(e: Event) {
@@ -101,6 +111,52 @@ function formatBytes(bytes: number) {
                 @click="setTheme(opt.value)"
               >
                 {{ opt.label }}
+              </button>
+            </div>
+          </div>
+          <div class="border-t border-border/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center justify-center size-7 rounded-lg bg-muted">
+                <span class="font-serif text-[13px] font-semibold">Aa</span>
+              </span>
+              <div>
+                <p class="text-sm font-medium">Typography</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Serif or sans-serif typeface</p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button
+                v-for="opt in FONT_OPTIONS"
+                :key="opt.value"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ios-press"
+                :class="preferences.fontFamily === opt.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'"
+                @click="setFontFamily(opt.value)"
+              >
+                <span :class="opt.value === 'serif' ? 'font-serif' : 'font-sans'">{{ opt.label }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="border-t border-border/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center justify-center size-7 rounded-lg bg-muted">
+                <span class="text-xs font-medium">≡</span>
+              </span>
+              <div>
+                <p class="text-sm font-medium">Density</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">Compact or comfortable spacing</p>
+              </div>
+            </div>
+            <div class="flex gap-1">
+              <button
+                v-for="d in DENSITY_OPTIONS"
+                :key="d.label"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ios-press"
+                :class="preferences.compactLayout === d.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'"
+                @click="setCompactLayout(d.value)"
+              >
+                {{ d.label }}
               </button>
             </div>
           </div>

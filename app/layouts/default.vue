@@ -54,19 +54,32 @@
         >
           <!-- Liquid glass container -->
           <LiquidGlass :style="glassStyle" class="w-full pointer-events-auto">
-            <button
-              type="button"
-              aria-label="Add Portfolio"
-              class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-white/50 dark:bg-white/10 h-12 px-5 text-sm font-medium text-foreground/80 backdrop-blur-xl cursor-pointer ios-press hover:bg-white/70 dark:hover:bg-white/20 transition-colors"
-              @click="addModal.open"
-            >
-              <Plus class="size-4 shrink-0" />
-              <span class="fab-label font-medium tracking-tight">Add Portfolio</span>
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Add Watchlist"
+                class="w-1/3 inline-flex items-center justify-center gap-1.5 rounded-full bg-white/50 dark:bg-white/10 h-12 px-3 text-sm font-medium text-foreground/80 backdrop-blur-xl cursor-pointer ios-press hover:bg-white/70 dark:hover:bg-white/20 transition-colors"
+                @click="watchlistModal.open"
+              >
+                <Plus class="size-4 shrink-0" />
+                <span class="fab-label font-medium tracking-tight">Watchlist</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Add Portfolio"
+                class="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-white/50 dark:bg-white/10 h-12 px-5 text-sm font-medium text-foreground/80 backdrop-blur-xl cursor-pointer ios-press hover:bg-white/70 dark:hover:bg-white/20 transition-colors"
+                @click="addModal.open"
+              >
+                <Plus class="size-4 shrink-0" />
+                <span class="fab-label font-medium tracking-tight">Add Portfolio</span>
+              </button>
+            </div>
           </LiquidGlass>
         </div>
       </div>
     </Transition>
+
+    <WatchlistSearchDialog />
   </div>
 </template>
 
@@ -77,6 +90,7 @@ import { brandColorFor } from '~/utils/brand-colors'
 const { refreshing, refresh } = useQuotes()
 const { holdings } = usePortfolio()
 const addModal = useAddHoldingModal()
+const watchlistModal = useAddWatchlistModal()
 const route = useRoute()
 const isHome = computed(() => route.path === '/')
 const isDetail = computed(() => route.path.startsWith('/holding/'))
