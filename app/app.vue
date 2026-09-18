@@ -37,6 +37,6 @@ watch(justBackOnline, (v) => {
         </div>
       </Transition>
     </div>
-    <UiSonner :theme="preferences.theme === 'system' ? undefined : preferences.theme" rich-colors />
+    <UiSonner :theme="preferences.theme === 'system' ? undefined : preferences.theme" rich-colors position="top-center" :offset="12" />
   </div>
 </template>
