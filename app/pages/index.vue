@@ -30,6 +30,7 @@ const editorOpen = ref(false)
 const editingHolding = ref<Holding | null>(null)
 const deletingHolding = ref<Holding | null>(null)
 const filteringSymbol = ref<string | null>(null)
+const filteringCurrency = ref<string | null>(null)
 
 // Watch addModal trigger
 watch(addModal.isOpen, (open) => {
@@ -198,7 +199,9 @@ onMounted(() => {
           :holdings="holdings"
           :get-quote="getQuote"
           :selected-symbol="filteringSymbol"
+          :selected-currency="filteringCurrency"
           @select="(s: string | null) => (filteringSymbol = s)"
+          @select-currency="(c: string | null) => (filteringCurrency = c)"
         />
 
         <!-- Holdings List -->
@@ -206,6 +209,7 @@ onMounted(() => {
           :holdings="holdings"
           :get-quote="getQuote"
           :filtering="filteringSymbol"
+          :filtering-currency="filteringCurrency"
           @edit="openEdit"
           @remove="requestRemove"
         />

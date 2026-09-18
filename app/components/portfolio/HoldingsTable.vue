@@ -11,6 +11,7 @@ const props = defineProps<{
   holdings: readonly Holding[]
   getQuote: (symbol: string) => Quote | null
   filtering?: string | null
+  filteringCurrency?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -62,6 +63,9 @@ const rows = computed(() => {
   })
 
   let filtered = withMetrics
+  if (props.filteringCurrency) {
+    filtered = filtered.filter((r) => r.currency === props.filteringCurrency)
+  }
   if (filterStatus.value === 'gain') {
     filtered = filtered.filter((r) => r.metrics.pnl >= 0)
   } else if (filterStatus.value === 'loss') {
@@ -226,7 +230,7 @@ function onRowClick(h: Holding) {
         :key="row.holding.id"
         class="relative overflow-hidden row-stagger contain-content"
         :style="{ animationDelay: `${Math.min(i, 8) * 45}ms` }"
-        :class="{ 'bg-muted/15': filtering === row.holding.symbol }"
+        :class="{ 'bg-muted/15': filtering === row.holding.symbol || filteringCurrency === row.currency }"
       >
         <!-- Action buttons (revealed on swipe) -->
         <div class="absolute inset-y-0 right-0 flex items-center">
