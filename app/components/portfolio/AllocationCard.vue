@@ -34,7 +34,8 @@ const segments = computed<{ label: string; value: number; color: string }[]>(() 
   })
   return props.holdings.map((h, i) => {
     const mv = metrics[i]?.marketValue ?? 0
-    const brand = brandColorFor(h.symbol)
+    const isCash = h.isCash || h.symbol.startsWith('CASH-')
+    const brand = isCash ? CASH_COLOR : brandColorFor(h.symbol)
     return {
       label: h.symbol,
       value: mv,
@@ -53,6 +54,7 @@ const CURRENCY_COLORS: Record<string, string> = {
   USD: '#2563EB',
   IDR: '#DC2626',
   SGD: '#16A34A',
+  MYR: '#F5B700',
   EUR: '#7C3AED',
   GBP: '#DB2777',
   JPY: '#DC2626',
@@ -60,7 +62,7 @@ const CURRENCY_COLORS: Record<string, string> = {
 }
 
 const INVESTED_COLOR = '#2563EB'
-const CASH_COLOR = '#DC2626'
+const CASH_COLOR = '#1D1D1F'
 
 const currencies = computed<{ label: string; value: number; color: string }[]>(() => {
   const byCur = new Map<string, number>()

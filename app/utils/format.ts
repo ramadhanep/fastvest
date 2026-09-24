@@ -6,6 +6,7 @@ const currencySymbol: Record<string, string> = {
   JPY: '¥',
   SGD: 'S$',
   HKD: 'HK$',
+  MYR: 'RM',
 }
 
 export function formatCurrency(value: number | undefined | null, currency = 'USD'): string {

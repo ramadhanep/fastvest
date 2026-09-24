@@ -1,7 +1,7 @@
 import { kv, storageRawGet, storageRawSet } from '~/lib/storage'
 
 export type ThemePreference = 'system' | 'light' | 'dark'
-export type DisplayCurrency = 'USD' | 'IDR' | 'SGD'
+export type DisplayCurrency = 'USD' | 'IDR' | 'SGD' | 'MYR'
 export type FontPreference = 'serif' | 'sans'
 
 interface Preferences {

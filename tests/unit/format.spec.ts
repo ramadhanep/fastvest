@@ -17,6 +17,9 @@ describe('formatCurrency', () => {
   it('formats IDR without decimals', () => {
     expect(formatCurrency(1500000, 'IDR')).toBe('Rp1,500,000')
   })
+  it('formats MYR', () => {
+    expect(formatCurrency(125.5, 'MYR')).toBe('RM125.50')
+  })
   it('renders dash for missing values', () => {
     expect(formatCurrency(undefined)).toBe('—')
     expect(formatCurrency(NaN)).toBe('—')

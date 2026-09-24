@@ -15,7 +15,8 @@ const props = defineProps<{
 const showBalance = ref(true)
 
 const { preferences, setDisplayCurrency } = usePreferences()
-const { fromUsd } = useExchangeRates()
+const { ensureLoaded: ensureRates, fromUsd, rates } = useExchangeRates()
+onMounted(ensureRates)
 
 // Use persisted currency from preferences
 const displayCurrency = computed(() => preferences.value.displayCurrency)
@@ -24,6 +25,13 @@ const displayCurrency = computed(() => preferences.value.displayCurrency)
 const totalValue = computed(() => fromUsd(props.summary.totalValue, displayCurrency.value))
 const totalCost = computed(() => fromUsd(props.summary.totalCostBasis, displayCurrency.value))
 const totalPnl = computed(() => fromUsd(props.summary.totalPnl, displayCurrency.value))
+
+const fxRate = computed<number | undefined>(() => {
+  const cur = displayCurrency.value
+  if (cur === 'USD') return undefined
+  const usdPerUnit = rates.value[cur]
+  return usdPerUnit ? 1 / usdPerUnit : undefined
+})
 
 // iOS-style animated number counting when values change
 const animatedTotal = useTransition(totalValue, {
@@ -100,17 +108,18 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
         <select
           :value="displayCurrency"
           class="ml-2 rounded-sm bg-muted/20 px-2 py-0.5 text-xs cursor-pointer"
-          @change="setDisplayCurrency(($event.target as HTMLSelectElement).value as 'USD' | 'IDR' | 'SGD')"
+          @change="setDisplayCurrency(($event.target as HTMLSelectElement).value as 'USD' | 'IDR' | 'SGD' | 'MYR')"
         >
           <option value="USD">USD</option>
           <option value="IDR">IDR</option>
           <option value="SGD">SGD</option>
+          <option value="MYR">MYR</option>
         </select>
       </div>
     </div>
 
-    <!-- 3-Column Metrics -->
-    <div class="mt-4 grid grid-cols-3 gap-0 rounded-xl bg-muted/30 overflow-hidden">
+    <!-- Metrics: Invested · Rate · Return · Today -->
+    <div class="mt-4 grid grid-cols-3 gap-0 rounded-xl bg-muted/30 overflow-hidden divide-x divide-border/30" :class="{ 'grid-cols-4': displayCurrency !== 'USD' }">
       <div class="px-3 py-2.5 text-center">
         <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Invested</p>
         <p class="mt-0.5 text-xs font-semibold tabular-nums text-foreground truncate">
@@ -118,7 +127,16 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
           <template v-else>••••</template>
         </p>
       </div>
-      <div class="px-3 py-2.5 text-center border-x border-border/30">
+      <div v-if="displayCurrency !== 'USD'" class="px-3 py-2.5 text-center">
+        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">FX Rate</p>
+        <p class="mt-0.5 text-xs font-semibold tabular-nums truncate">
+          <template v-if="fxRate !== undefined">
+            {{ formatCurrency(fxRate, displayCurrency) }}
+          </template>
+          <template v-else>—</template>
+        </p>
+      </div>
+      <div class="px-3 py-2.5 text-center">
         <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Return</p>
         <p
           class="mt-0.5 text-xs font-semibold tabular-nums truncate"

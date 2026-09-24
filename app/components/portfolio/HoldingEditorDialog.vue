@@ -48,7 +48,7 @@ const costError = ref('')
 const nameError = ref('')
 const selectedSymbol = ref('')
 
-const CASH_CURRENCIES = ['USD', 'IDR', 'SGD']
+const CASH_CURRENCIES = ['USD', 'IDR', 'SGD', 'MYR']
 const BANK_OPTIONS = [
   'BCA Tabungan',
   'BCA Jenius',
@@ -92,7 +92,7 @@ watch(
   (open) => {
     if (!open) return
     if (props.holding) {
-      const isCashH = (props.holding.isCash ?? false) || props.holding.symbol.startsWith('CASH-')
+      const realCash = props.holding.symbol.startsWith('CASH-')
       selectedSymbol.value = props.holding.symbol
       selected.value = {
         symbol: props.holding.symbol,
@@ -103,13 +103,13 @@ watch(
       quantity.value = String(props.holding.quantity)
       averageCost.value = String(props.holding.averageCost)
       currency.value = props.holding.currency ?? (props.holding.symbol.endsWith('.JK') ? 'IDR' : 'USD')
-      cashName.value = isCashH ? (props.holding.name ?? cashNameFromSymbol(props.holding.symbol)) : ''
+      cashName.value = realCash ? (props.holding.name ?? cashNameFromSymbol(props.holding.symbol)) : ''
       notes.value = props.holding.notes ?? ''
       isCash.value = props.holding.isCash ?? false
-      step.value = isCashH ? 'cash' : 'form'
+      step.value = realCash ? 'cash' : 'form'
       manualSymbol.value = props.holding.symbol
       nameError.value = ''
-      if (!isCashH) quotes.refresh([props.holding.symbol])
+      if (!realCash) quotes.refresh([props.holding.symbol])
     } else {
       selectedSymbol.value = ''
       selected.value = null
@@ -332,7 +332,7 @@ async function save() {
                 <span class="min-w-0">
                   <span class="block text-xs font-semibold leading-tight">Cash / Bank Balance</span>
                   <span class="block text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                    Manual entry in USD, IDR, SGD
+                    Manual entry in USD, IDR, SGD, MYR
                   </span>
                 </span>
               </span>
@@ -506,7 +506,7 @@ async function save() {
           <!-- Currency -->
           <div>
             <UiLabel class="text-xs font-medium">Currency</UiLabel>
-            <div class="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-muted/40 p-1">
+            <div class="mt-1.5 grid grid-cols-4 gap-1 rounded-xl bg-muted/40 p-1">
               <button
                 v-for="c in CASH_CURRENCIES"
                 :key="c"
@@ -692,6 +692,7 @@ async function save() {
                 <option value="IDR" />
                 <option value="EUR" />
                 <option value="SGD" />
+                <option value="MYR" />
               </datalist>
             </div>
             <div>

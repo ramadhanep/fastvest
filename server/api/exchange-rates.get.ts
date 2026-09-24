@@ -10,9 +10,10 @@ const PAIRS: Record<string, string> = {
   GBP: 'GBPUSD=X',
   HKD: 'HKDUSD=X',
   SGD: 'SGDUSD=X',
+  MYR: 'MYR=X',
 }
 
-const INVERTED = new Set(['IDR', 'JPY'])
+const INVERTED = new Set(['IDR', 'JPY', 'MYR'])
 const CODES = Object.keys(PAIRS)
 
 export default defineEventHandler(async () => {
