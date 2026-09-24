@@ -3,6 +3,7 @@ import { kv, storageRawGet, storageRawSet } from '~/lib/storage'
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type DisplayCurrency = 'USD' | 'IDR' | 'SGD' | 'MYR'
 export type FontPreference = 'serif' | 'sans'
+export type Locale = 'en' | 'id'
 
 interface Preferences {
   theme: ThemePreference
@@ -10,6 +11,7 @@ interface Preferences {
   displayCurrency: DisplayCurrency
   fontFamily: FontPreference
   compactLayout: boolean
+  locale: Locale
 }
 
 const preferences = ref<Preferences>({
@@ -18,6 +20,7 @@ const preferences = ref<Preferences>({
   displayCurrency: 'USD',
   fontFamily: 'serif',
   compactLayout: false,
+  locale: 'en',
 })
 const loaded = ref(false)
 
@@ -27,6 +30,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   displayCurrency: 'USD',
   fontFamily: 'serif',
   compactLayout: false,
+  locale: 'en',
 }
 
 export function usePreferences() {
@@ -55,6 +59,7 @@ export function usePreferences() {
       const el = document.documentElement
       el.dataset.font = preferences.value.fontFamily
       el.dataset.density = preferences.value.compactLayout ? 'compact' : 'comfortable'
+      el.lang = preferences.value.locale
     }
   }
 
@@ -86,6 +91,12 @@ export function usePreferences() {
     persist()
   }
 
+  function setLocale(locale: Locale) {
+    preferences.value.locale = locale
+    persist()
+    applyTypography()
+  }
+
   if (import.meta.client && !loaded.value) load()
   if (import.meta.client) applyTypography()
 
@@ -95,6 +106,7 @@ export function usePreferences() {
     setTheme,
     setRefreshInterval,
     setDisplayCurrency,
+    setLocale,
     setFontFamily,
     setCompactLayout,
     applyTheme,

@@ -26,7 +26,7 @@
           <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
           <path d="M21 3v5h-5" />
         </svg>
-        <span>{{ refreshing ? 'Refreshing...' : pullReady ? 'Release to refresh' : 'Pull down to refresh' }}</span>
+        <span>{{ refreshing ? t('ptrRefreshing') : pullReady ? t('ptrRelease') : t('ptrPull') }}</span>
       </div>
     </div>
 
@@ -62,7 +62,7 @@
                 @click="watchlistModal.open"
               >
                 <Plus class="size-4 shrink-0" />
-                <span class="fab-label font-medium tracking-tight">Watchlist</span>
+                <span class="fab-label font-medium tracking-tight">{{ t('fabWatchlist') }}</span>
               </button>
               <button
                 type="button"
@@ -71,7 +71,7 @@
                 @click="addModal.open"
               >
                 <Plus class="size-4 shrink-0" />
-                <span class="fab-label font-medium tracking-tight">Add Portfolio</span>
+                <span class="fab-label font-medium tracking-tight">{{ t('fabAddPortfolio') }}</span>
               </button>
             </div>
           </LiquidGlass>
@@ -86,6 +86,8 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
 import { brandColorFor } from '~/utils/brand-colors'
+
+const { t } = useI18n()
 
 const { refreshing, refresh } = useQuotes()
 const { holdings } = usePortfolio()

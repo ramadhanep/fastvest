@@ -6,6 +6,7 @@ const { isOpen, close } = useAddWatchlistModal()
 const search = useSymbolSearch()
 const { add, has } = useWatchlist()
 const quotes = useQuotes()
+const { t } = useI18n()
 
 const query = computed(() => search.query.value)
 const results = computed(() => search.results.value)
@@ -39,7 +40,7 @@ function pickManual() {
     <UiDialogContent class="sm:max-w-md rounded-3xl p-5 sm:p-6 border border-border/80 bg-card shadow-2xl">
       <UiDialogHeader class="text-left">
         <UiDialogTitle class="text-base font-semibold tracking-tight">
-          Add to Watchlist
+          {{ t('watchlistAdd') }}
         </UiDialogTitle>
       </UiDialogHeader>
 
@@ -51,17 +52,17 @@ function pickManual() {
         <UiInput
           :model-value="query"
           class="pl-9 h-10 rounded-xl bg-muted/40 border-border/70 text-xs focus-visible:ring-1"
-          placeholder="Search symbol, e.g. MSFT, BBCA, BTC..."
+          :placeholder="t('editorSearchPlaceholder')"
           autofocus
           @update:model-value="search.onInput(String($event))"
           @keydown.enter.prevent="pickManual"
         />
       </div>
 
-      <div class="mt-3 max-h-80 overflow-y-auto no-scrollbar space-y-1.5" role="listbox" aria-label="Watchlist options">
+      <div class="mt-3 max-h-80 overflow-y-auto no-scrollbar space-y-1.5" role="listbox" :aria-label="t('watchlistOptionsAria')">
         <div v-if="searching" class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground">
           <Loader2 class="size-4 animate-spin" aria-hidden="true" />
-          Searching market quotes…
+          {{ t('editorSearching') }}
         </div>
 
         <template v-else-if="query.trim()">
@@ -82,7 +83,7 @@ function pickManual() {
             </div>
             <span v-if="has(item.symbol)" class="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium shrink-0">
               <Check class="size-3.5" aria-hidden="true" />
-              Tracked
+              {{ t('watchlistTracked') }}
             </span>
             <ChevronRight v-else class="size-4 text-muted-foreground shrink-0" aria-hidden="true" />
           </button>
@@ -92,13 +93,13 @@ function pickManual() {
             class="flex w-full items-center justify-between rounded-2xl border border-dashed border-border/80 p-3 text-xs text-muted-foreground hover:bg-muted/40 transition-colors cursor-pointer"
             @click="pickManual"
           >
-            <span>Use <strong class="text-foreground">"{{ query.trim().toUpperCase() }}"</strong></span>
+            <span>{{ t('editorUse') }} <strong class="text-foreground">"{{ query.trim().toUpperCase() }}"</strong></span>
           </button>
         </template>
 
         <template v-else>
           <div v-if="recent.length" class="space-y-1">
-            <p class="px-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Recent</p>
+            <p class="px-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{{ t('editorRecent') }}</p>
             <button
               v-for="item in recent"
               :key="item.symbol"

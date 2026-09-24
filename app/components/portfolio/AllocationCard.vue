@@ -23,6 +23,7 @@ const emit = defineEmits<{
 
 const { ensureLoaded: ensureRates, toUsd, fromUsd } = useExchangeRates()
 const { preferences } = usePreferences()
+const { t } = useI18n()
 
 const displayCurrency = computed(() => preferences.value.displayCurrency ?? 'USD')
 
@@ -133,7 +134,7 @@ watch(isOpen, (open, prev) => {
       :aria-expanded="isOpen"
       @click="onToggle"
     >
-      <span>Allocation</span>
+      <span>{{ t('allocationTitle') }}</span>
       <svg
         class="size-4 text-muted-foreground transition-transform duration-300 ease-out"
         :class="isOpen ? 'rotate-180' : 'rotate-0'"
@@ -191,7 +192,7 @@ watch(isOpen, (open, prev) => {
 
         <div class="mt-5 border-t border-border/40 pt-4">
           <p class="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Cash vs investments
+            {{ t('allocationCashVsInvestments') }}
           </p>
           <div class="rounded-xl bg-muted/30 p-3">
             <div class="flex h-2.5 w-full overflow-hidden rounded-full" :style="{ backgroundColor: CASH_COLOR }" role="img" :aria-label="`Investments ${investedPct.toFixed(1)}%, cash ${cashPct.toFixed(1)}%`">
@@ -201,7 +202,7 @@ watch(isOpen, (open, prev) => {
               <div class="flex w-full items-center justify-between gap-2">
                 <span class="flex min-w-0 items-center gap-2">
                   <span class="size-2 shrink-0 rounded-full" :style="{ backgroundColor: INVESTED_COLOR }" aria-hidden="true" />
-                  <span class="text-xs font-medium text-foreground">Investments</span>
+                  <span class="text-xs font-medium text-foreground">{{ t('allocationInvestments') }}</span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 tabular-nums">
                   <span class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(cashSplit.invested, displayCurrency), displayCurrency) }}</span>
@@ -211,7 +212,7 @@ watch(isOpen, (open, prev) => {
               <div class="flex w-full items-center justify-between gap-2">
                 <span class="flex min-w-0 items-center gap-2">
                   <span class="size-2 shrink-0 rounded-full" :style="{ backgroundColor: CASH_COLOR }" aria-hidden="true" />
-                  <span class="text-xs font-medium text-foreground">Cash</span>
+                  <span class="text-xs font-medium text-foreground">{{ t('allocationCash') }}</span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 tabular-nums">
                   <span class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(cashSplit.cash, displayCurrency), displayCurrency) }}</span>
@@ -227,7 +228,7 @@ watch(isOpen, (open, prev) => {
           class="mt-5 border-t border-border/40 pt-4"
         >
           <p class="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Currency exposure
+            {{ t('allocationCurrencyExposure') }}
           </p>
           <div class="rounded-xl bg-muted/30 p-3">
             <div class="flex h-2.5 w-full items-stretch overflow-hidden rounded-full bg-muted" role="img" :aria-label="currencyBarLabel">

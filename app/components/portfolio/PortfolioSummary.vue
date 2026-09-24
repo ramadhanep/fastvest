@@ -15,6 +15,7 @@ const props = defineProps<{
 const showBalance = ref(true)
 
 const { preferences, setDisplayCurrency } = usePreferences()
+const { t } = useI18n()
 const { ensureLoaded: ensureRates, fromUsd, rates } = useExchangeRates()
 onMounted(ensureRates)
 
@@ -99,7 +100,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
         <button
           type="button"
           class="size-7 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ios-press cursor-pointer"
-          aria-label="Toggle balance visibility"
+          :aria-label="t('summaryToggleAria')"
           @click="showBalance = !showBalance"
         >
           <EyeOff v-if="showBalance" class="size-3.5" />
@@ -121,14 +122,14 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
     <!-- Metrics: Invested · Rate · Return · Today -->
     <div class="mt-4 grid grid-cols-3 gap-0 rounded-xl bg-muted/30 overflow-hidden divide-x divide-border/30" :class="{ 'grid-cols-4': displayCurrency !== 'USD' }">
       <div class="px-3 py-2.5 text-center">
-        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Invested</p>
+        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{{ t('summaryInvested') }}</p>
         <p class="mt-0.5 text-xs font-semibold tabular-nums text-foreground truncate">
           <template v-if="showBalance">{{ formatCurrency(animatedCost, displayCurrency) }}</template>
           <template v-else>••••</template>
         </p>
       </div>
       <div v-if="displayCurrency !== 'USD'" class="px-3 py-2.5 text-center">
-        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">FX Rate</p>
+        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{{ t('summaryFxRate') }}</p>
         <p class="mt-0.5 text-xs font-semibold tabular-nums truncate">
           <template v-if="fxRate !== undefined">
             {{ formatCurrency(fxRate, displayCurrency) }}
@@ -137,7 +138,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
         </p>
       </div>
       <div class="px-3 py-2.5 text-center">
-        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Return</p>
+        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{{ t('summaryReturn') }}</p>
         <p
           class="mt-0.5 text-xs font-semibold tabular-nums truncate"
           :class="
@@ -156,7 +157,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
         </p>
       </div>
       <div class="px-3 py-2.5 text-center">
-        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Today</p>
+        <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{{ t('summaryToday') }}</p>
         <p
           class="mt-0.5 text-xs font-semibold tabular-nums truncate"
           :class="
@@ -180,7 +181,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
       v-if="quoteErrors > 0"
       class="mt-2 text-[11px] text-amber-600 dark:text-amber-400"
     >
-      {{ quoteErrors }} quote{{ quoteErrors === 1 ? '' : 's' }} unavailable
+      {{ t('summaryQuoteErrors', { count: quoteErrors, s: quoteErrors === 1 ? '' : 's' }) }}
     </div>
   </section>
 </template>

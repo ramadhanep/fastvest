@@ -5,6 +5,7 @@ import { formatCurrency, formatPercent } from '~/utils/format'
 const router = useRouter()
 const { items, remove } = useWatchlist()
 const quotes = useQuotes()
+const { t } = useI18n()
 
 function refreshMissing() {
   const missing = items.value.map((w) => w.symbol).filter((s) => !quotes.getQuote(s))
@@ -22,7 +23,7 @@ function goto(symbol: string) {
 
 <template>
   <section v-if="items.length" class="mt-4" aria-labelledby="watchlist-heading">
-    <h2 id="watchlist-heading" class="text-sm font-semibold tracking-tight">Watchlist</h2>
+    <h2 id="watchlist-heading" class="text-sm font-semibold tracking-tight">{{ t('watchlistTitle') }}</h2>
 
     <div class="mt-3 -mx-4 sm:mx-0 rounded-none sm:rounded-2xl bg-card divide-y divide-border/30 overflow-hidden">
       <div
@@ -57,7 +58,7 @@ function goto(symbol: string) {
         <button
           type="button"
           class="size-8 shrink-0 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-          aria-label="Remove from watchlist"
+          :aria-label="t('watchlistRemoveAria')"
           @click.stop="remove(w.symbol)"
         >
           <X class="size-4" aria-hidden="true" />

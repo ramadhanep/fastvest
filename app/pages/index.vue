@@ -19,6 +19,7 @@ const {
 
 const quotes = useQuotes()
 const { preferences } = usePreferences()
+const { t } = useI18n()
 const { online, justBackOnline } = useConnection()
 const { refresh, getQuote, errors, lastUpdated, refreshing } = quotes
 const addModal = useAddHoldingModal()
@@ -141,20 +142,20 @@ onMounted(() => {
           <div class="flex items-start gap-3">
             <AlertCircle class="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
             <div>
-              <p class="font-semibold text-sm">Failed to read local portfolio</p>
+              <p class="font-semibold text-sm">{{ t('storageFailedTitle') }}</p>
               <p class="mt-1 text-xs text-muted-foreground">
-                Local data might be corrupt. Restore from a backup or reset to start fresh.
+                {{ t('storageFailedBody') }}
               </p>
             </div>
           </div>
           <div class="mt-4 flex flex-wrap gap-2">
             <UiButton variant="outline" size="sm" class="rounded-full text-xs" @click="exportPortfolio">
               <Download class="size-3.5 mr-1" aria-hidden="true" />
-              Export Data
+              {{ t('exportData') }}
             </UiButton>
             <UiButton variant="destructive" size="sm" class="rounded-full text-xs" @click="resetPortfolio">
               <Trash2 class="size-3.5 mr-1" aria-hidden="true" />
-              Reset Data
+              {{ t('resetData') }}
             </UiButton>
           </div>
         </div>
@@ -184,13 +185,13 @@ onMounted(() => {
           <div class="flex items-center gap-2.5">
             <AlertCircle class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <div>
-              <p class="text-xs font-semibold">Market quotes temporarily unavailable</p>
-              <p class="text-[11px] text-muted-foreground">Showing last cached prices.</p>
+              <p class="text-xs font-semibold">{{ t('quotesUnavailable') }}</p>
+              <p class="text-[11px] text-muted-foreground">{{ t('showingCached') }}</p>
             </div>
           </div>
           <UiButton variant="outline" size="sm" class="h-8 rounded-full text-xs" @click="refreshAll">
             <RefreshCw class="size-3 mr-1" aria-hidden="true" />
-            Retry
+            {{ t('retry') }}
           </UiButton>
         </div>
 
@@ -223,9 +224,9 @@ onMounted(() => {
 
       <!-- Status footer -->
       <div class="mt-8 px-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/30 pt-4 text-[11px] text-muted-foreground">
-        <span v-if="lastUpdated">Updated {{ formatTimeAgo(lastUpdated) }}</span>
-        <span v-if="!online">Offline · cached prices</span>
-        <span>{{ hasQuotes ? 'Quotes via Yahoo Finance' : 'Refresh to see quotes' }}</span>
+        <span v-if="lastUpdated">{{ t('updatedAt', { time: formatTimeAgo(lastUpdated) }) }}</span>
+        <span v-if="!online">{{ t('offlineCached') }}</span>
+        <span>{{ hasQuotes ? t('quotesViaYahoo') : t('refreshToSeeQuotes') }}</span>
       </div>
     </template>
 

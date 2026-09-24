@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Plus } from '@lucide/vue'
 
+const { t } = useI18n()
+
 const emit = defineEmits<{
   add: []
   loadDemo: []
@@ -14,10 +16,10 @@ const emit = defineEmits<{
     </div>
 
     <h1 class="text-lg font-semibold tracking-tight text-foreground">
-      Your portfolio
+      {{ t('emptyTitle') }}
     </h1>
     <p class="mt-1 max-w-[240px] text-xs text-muted-foreground leading-relaxed">
-      Add your first holding to start tracking.
+      {{ t('emptyBody') }}
     </p>
 
     <div class="mt-5 flex flex-col items-center gap-2.5 w-full max-w-[200px]">
@@ -27,7 +29,7 @@ const emit = defineEmits<{
         @click="emit('add')"
       >
         <Plus class="size-4" />
-        Add Holding
+        {{ t('emptyAdd') }}
       </button>
 
       <button
@@ -35,7 +37,7 @@ const emit = defineEmits<{
         class="w-full inline-flex items-center justify-center h-10 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground transition-colors ios-press cursor-pointer"
         @click="emit('loadDemo')"
       >
-        Load Demo
+        {{ t('emptyLoadDemo') }}
       </button>
     </div>
   </div>

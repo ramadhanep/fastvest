@@ -18,6 +18,7 @@ const route = useRoute()
 const isSettings = computed(() => route.path === '/settings')
 
 const colorMode = useColorMode()
+const { t } = useI18n()
 const mounted = ref(false)
 onMounted(() => {
   mounted.value = true
@@ -66,11 +67,11 @@ const glassStyle = computed(() => {
         <NuxtLink
           v-if="isSettings || backTo"
           :to="backTo ?? '/'"
-          aria-label="Back to Portfolio"
+          :aria-label="t('brandBackAria')"
           class="inline-flex min-w-0 items-center gap-2 rounded-full bg-white/50 dark:bg-white/10 h-12 pl-4 pr-5 text-sm font-medium text-foreground/80 backdrop-blur-xl cursor-pointer ios-press hover:bg-white/70 dark:hover:bg-white/20 transition-colors shrink-0"
         >
           <ArrowLeft class="size-4 shrink-0" />
-          <span>Portfolio</span>
+          <span>{{ t('brand') }}</span>
         </NuxtLink>
 
         <NuxtLink
@@ -85,7 +86,7 @@ const glassStyle = computed(() => {
             height="32"
             class="size-8 rounded-full object-cover shrink-0"
           />
-          <span class="font-serif text-sm font-semibold tracking-tight text-foreground/90">Portfolio</span>
+          <span class="font-serif text-sm font-semibold tracking-tight text-foreground/90">{{ t('brand') }}</span>
         </NuxtLink>
 
         <!-- Right: Actions -->
@@ -93,7 +94,7 @@ const glassStyle = computed(() => {
           <NuxtLink
             v-if="!isSettings"
             to="/settings"
-            aria-label="Settings"
+            :aria-label="t('settingsAria')"
             class="rounded-full bg-white/50 dark:bg-white/10 size-12 shrink-0 inline-flex items-center justify-center cursor-pointer ios-press transition-colors hover:bg-white/70 dark:hover:bg-white/20 text-muted-foreground hover:text-foreground"
           >
             <Settings class="size-4" />
@@ -102,7 +103,7 @@ const glassStyle = computed(() => {
 
           <button
             type="button"
-            aria-label="Toggle theme"
+            :aria-label="t('themeAria')"
             class="rounded-full bg-white/50 dark:bg-white/10 size-12 shrink-0 inline-flex items-center justify-center cursor-pointer ios-press transition-colors hover:bg-white/70 dark:hover:bg-white/20 text-muted-foreground hover:text-foreground"
             @click="colorMode.preference = isDark ? 'light' : 'dark'"
           >

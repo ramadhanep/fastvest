@@ -2,6 +2,7 @@
 import { WifiOff } from '@lucide/vue'
 
 const { online, offlineSince } = useConnection()
+const { t } = useI18n()
 
 const isOffline = computed(() => !online.value)
 </script>
@@ -16,7 +17,7 @@ const isOffline = computed(() => !online.value)
     <div v-if="isOffline" class="sticky top-14 z-20 flex justify-center">
       <div class="flex w-full max-w-5xl items-center gap-2 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
         <WifiOff class="size-4 shrink-0" />
-        <span>Offline · showing cached prices</span>
+        <span>{{ t('offline') }}</span>
       </div>
     </div>
   </Transition>

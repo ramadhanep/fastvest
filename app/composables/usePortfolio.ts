@@ -5,6 +5,8 @@ import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import { useWatchlist } from './useWatchlist'
 
+const { t } = useI18n()
+
 export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
   {
     id: 'demo-aapl',
@@ -148,7 +150,7 @@ export function usePortfolio() {
     if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
     useWatchlist().resetDemoWatchlist()
     persist()
-    toast.info('Sample portfolio cleared. Starting with empty portfolio.')
+    toast.info(t('toastSampleCleared'))
   }
 
   function loadDemoPortfolio() {
@@ -161,7 +163,7 @@ export function usePortfolio() {
     }
     useWatchlist().loadDemoWatchlist()
     persist()
-    toast.success('Sample portfolio loaded.')
+    toast.success(t('toastSampleLoaded'))
   }
 
   function dismissDemoBanner() {

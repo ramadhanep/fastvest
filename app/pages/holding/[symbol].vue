@@ -13,6 +13,7 @@ const { has: hasWatch } = useWatchlist()
 const addModal = useAddHoldingModal()
 const quotes = useQuotes()
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
+const { t } = useI18n()
 
 const symbol = computed(() => String(route.params.symbol ?? ''))
 const holding = computed<Holding | null>(() =>
@@ -147,7 +148,7 @@ function confirmDelete() {
             <div>
               <p class="text-sm font-semibold tracking-tight">{{ holding?.name ?? quote?.name ?? symbol }}</p>
               <p class="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[160px]">
-                {{ isCashSymbol ? `Cash balance · ${holding?.currency ?? ''}` : (quote?.name ?? holding?.notes ?? (isWatch ? 'Watching · not in portfolio' : '')) }}
+                {{ isCashSymbol ? t('detailCashBalance', { currency: holding?.currency ?? '' }) : (quote?.name ?? holding?.notes ?? (isWatch ? t('detailWatching') : '')) }}
               </p>
             </div>
           </div>
@@ -173,15 +174,15 @@ function confirmDelete() {
 
         <div v-if="holding" class="mt-4 grid grid-cols-3 gap-2">
           <div>
-            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? 'Amount' : 'Shares' }}</p>
+            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? t('detailAmount') : t('detailShares') }}</p>
             <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? formatCurrency(holding.quantity, holding.currency ?? 'USD') : formatQuantity(holding.quantity) }}</p>
           </div>
           <div class="text-center">
-            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? 'Rate' : 'Avg Cost' }}</p>
+            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? t('detailRate') : t('detailAvgCost') }}</p>
             <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? '—' : formatNumber(holding.averageCost) }}</p>
           </div>
           <div class="text-right">
-            <p class="text-[10px] text-muted-foreground font-medium">Weight</p>
+            <p class="text-[10px] text-muted-foreground font-medium">{{ t('detailWeight') }}</p>
             <p class="text-sm font-semibold tabular-nums mt-0.5">{{ allocation !== null ? `${allocation.toFixed(1)}%` : '—' }}</p>
           </div>
         </div>
@@ -204,8 +205,8 @@ function confirmDelete() {
             <div v-else-if="chartLoading" class="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 class="size-3.5 animate-spin" aria-hidden="true" />
             </div>
-            <p v-else-if="chartError" class="text-[11px] text-muted-foreground">Unavailable</p>
-            <p v-else class="text-[11px] text-muted-foreground">No data</p>
+            <p v-else-if="chartError" class="text-[11px] text-muted-foreground">{{ t('detailUnavailable') }}</p>
+            <p v-else class="text-[11px] text-muted-foreground">{{ t('detailNoData') }}</p>
           </div>
         </Transition>
 
@@ -235,19 +236,19 @@ function confirmDelete() {
       <!-- Metrics -->
       <div v-if="holding" class="mt-4 rounded-2xl bg-card divide-y divide-border/40 overflow-hidden card-press elev-1">
         <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-xs text-muted-foreground font-medium">Invested</span>
+          <span class="text-xs text-muted-foreground font-medium">{{ t('detailInvested') }}</span>
           <span class="text-sm font-semibold tabular-nums">{{ metrics ? formatCurrency(metrics.costBasis, holding.currency ?? 'USD') : '—' }}</span>
         </div>
         <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-xs text-muted-foreground font-medium">Market Value</span>
+          <span class="text-xs text-muted-foreground font-medium">{{ t('detailMarketValue') }}</span>
           <span class="text-sm font-semibold tabular-nums">{{ metrics ? formatCurrency(metrics.marketValue, holding.currency ?? 'USD') : '—' }}</span>
         </div>
         <div class="flex items-center justify-between px-4 py-3 border-b border-border/30">
-          <span class="text-xs text-muted-foreground font-medium">Avg Cost</span>
+          <span class="text-xs text-muted-foreground font-medium">{{ t('detailAvgCost') }}</span>
           <span class="text-sm font-semibold tabular-nums">{{ formatNumber(holding.averageCost) }} {{ holding.currency ?? '' }}</span>
         </div>
         <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-xs text-muted-foreground font-medium">Total Return</span>
+          <span class="text-xs text-muted-foreground font-medium">{{ t('detailTotalReturn') }}</span>
           <span
             class="text-sm font-semibold tabular-nums"
             :class="metrics && metrics.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
@@ -269,10 +270,10 @@ function confirmDelete() {
           @click="trackInPortfolio"
         >
           <Plus class="size-4" aria-hidden="true" />
-          Track in Portfolio
+          {{ t('detailTrack') }}
         </button>
         <p class="mt-2 text-center text-[11px] text-muted-foreground">
-          Add quantity and cost to start tracking this symbol.
+          {{ t('detailTrackBody') }}
         </p>
       </div>
       <div v-else-if="holding" class="mt-6 grid grid-cols-2 gap-3">
@@ -282,7 +283,7 @@ function confirmDelete() {
           @click="editorOpen = true"
         >
           <Pencil class="size-4" aria-hidden="true" />
-          Edit
+          {{ t('detailEdit') }}
         </button>
         <button
           type="button"
@@ -290,7 +291,7 @@ function confirmDelete() {
           @click="deleting = true"
         >
           <Trash2 class="size-4" aria-hidden="true" />
-          Delete
+          {{ t('detailDelete') }}
         </button>
       </div>
     </div>

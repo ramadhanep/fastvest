@@ -27,6 +27,7 @@ const search = useSymbolSearch()
 const portfolio = usePortfolio()
 const quotes = useQuotes()
 const addModal = useAddHoldingModal()
+const { t } = useI18n()
 
 const query = computed(() => search.query.value)
 const results = computed(() => search.results.value)
@@ -49,6 +50,13 @@ const nameError = ref('')
 const selectedSymbol = ref('')
 
 const CASH_CURRENCIES = ['USD', 'IDR', 'SGD', 'MYR']
+const CATEGORY_KEYS = {
+  popular: 'categoryPopular',
+  tech: 'categoryTech',
+  etf: 'categoryEtf',
+  crypto: 'categoryCrypto',
+  idx: 'categoryIdx',
+} as const
 const BANK_OPTIONS = [
   'BCA Tabungan',
   'BCA Jenius',
@@ -234,7 +242,7 @@ function addQty(delta: number) {
 function useMarketPrice() {
   if (liveQuote.value?.price) {
     averageCost.value = String(liveQuote.value.price)
-    toast.success(`Market price (${liveQuote.value.price}) applied`)
+    toast.success(t('editorApplied', { price: liveQuote.value.price }))
   }
 }
 
@@ -274,11 +282,11 @@ async function save() {
 
     if (isEdit.value && props.holding) {
       portfolio.updateHolding(props.holding.id, parsed)
-      toast.success(isCashH ? `${parsed.name ?? 'Cash'} updated` : `${parsed.symbol} updated`)
+      toast.success(t('editorUpdated', { name: isCashH ? (parsed.name ?? 'Cash') : parsed.symbol }))
       emit('saved', { ...props.holding, ...parsed }, false)
     } else {
       const holding = portfolio.addHolding(parsed)
-      toast.success(isCashH ? `${parsed.name ?? 'Cash'} added to portfolio` : `${parsed.symbol} added to portfolio`)
+      toast.success(t('editorAdded', { name: isCashH ? (parsed.name ?? 'Cash') : parsed.symbol }))
       emit('saved', holding, true)
     }
     emit('close')
@@ -295,7 +303,7 @@ async function save() {
     >
       <UiDialogHeader class="text-left">
         <UiDialogTitle class="text-base font-semibold tracking-tight">
-          {{ isEdit ? 'Edit Position' : 'Add Holding' }}
+          {{ isEdit ? t('editorEditTitle') : t('editorAddTitle') }}
         </UiDialogTitle>
       </UiDialogHeader>
 
@@ -309,7 +317,7 @@ async function save() {
           <UiInput
             :model-value="query"
             class="pl-9 h-10 rounded-xl bg-muted/40 border-border/70 text-xs focus-visible:ring-1"
-            placeholder="Search symbol, e.g. NVDA, BBCA, BTC..."
+            :placeholder="t('editorSearchPlaceholder')"
             autofocus
             @update:model-value="search.onInput(String($event))"
             @keydown.enter.prevent="onManual"
@@ -330,9 +338,9 @@ async function save() {
                   <Wallet class="size-4" aria-hidden="true" />
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-semibold leading-tight">Cash / Bank Balance</span>
+                  <span class="block text-xs font-semibold leading-tight">{{ t('editorCashShortcut') }}</span>
                   <span class="block text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                    Manual entry in USD, IDR, SGD, MYR
+                    {{ t('editorCashSubtitle') }}
                   </span>
                 </span>
               </span>
@@ -352,7 +360,7 @@ async function save() {
                 "
                 @click="activeCategory = cat.key"
               >
-                {{ cat.label }}
+                {{ t(CATEGORY_KEYS[cat.key]) }}
               </button>
             </div>
 
@@ -394,7 +402,7 @@ async function save() {
             <!-- Recent Searches -->
             <div v-if="recent.length" class="pt-2 border-t border-border/40">
               <p class="px-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                Recent
+                {{ t('editorRecent') }}
               </p>
               <div class="space-y-1">
                 <button
@@ -420,7 +428,7 @@ async function save() {
           <!-- Searching State -->
           <div v-else-if="searching" class="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground">
             <Loader2 class="size-4 animate-spin" />
-            Searching market quotes…
+            {{ t('editorSearching') }}
           </div>
 
           <!-- Search Results -->
@@ -450,7 +458,7 @@ async function save() {
               class="flex w-full items-center justify-between rounded-2xl border border-dashed border-border/80 p-3 text-xs text-muted-foreground hover:bg-muted/40 transition-colors cursor-pointer"
               @click="onManual"
             >
-              <span>Use <strong class="text-foreground">"{{ query.trim().toUpperCase() }}"</strong></span>
+              <span>{{ t('editorUse') }} <strong class="text-foreground">"{{ query.trim().toUpperCase() }}"</strong></span>
             </button>
           </div>
         </div>
@@ -464,7 +472,7 @@ async function save() {
           @click="back"
         >
           <ArrowLeft class="size-3.5" aria-hidden="true" />
-          Back
+          {{ t('editorBack') }}
         </button>
 
         <!-- Account header -->
@@ -474,8 +482,8 @@ async function save() {
               {{ (cashName.trim() || 'Cash').slice(0, 2) }}
             </div>
             <div class="min-w-0">
-              <p class="text-sm font-semibold leading-tight truncate">{{ cashName.trim() || 'Cash balance' }}</p>
-              <p class="text-xs text-muted-foreground truncate leading-tight mt-0.5">Manual cash entry</p>
+              <p class="text-sm font-semibold leading-tight truncate">{{ cashName.trim() || t('editorCashBalance') }}</p>
+              <p class="text-xs text-muted-foreground truncate leading-tight mt-0.5">{{ t('editorManualEntry') }}</p>
             </div>
           </div>
           <span class="rounded-full bg-background px-2.5 py-0.5 text-[11px] font-medium text-foreground border border-border/60">
@@ -486,12 +494,12 @@ async function save() {
         <form class="space-y-4 mt-3" @submit.prevent="save">
           <!-- Account name -->
           <div>
-            <UiLabel for="fv-name" class="text-xs font-medium">Account Name</UiLabel>
+            <UiLabel for="fv-name" class="text-xs font-medium">{{ t('editorAccountName') }}</UiLabel>
             <UiInput
               id="fv-name"
               v-model="cashName"
               class="mt-1.5 h-10 rounded-xl"
-              placeholder="e.g. BCA Tabungan"
+              :placeholder="t('editorAccountPlaceholder')"
               autofocus
               :aria-describedby="nameError ? 'fv-name-err' : undefined"
             />
@@ -499,13 +507,13 @@ async function save() {
               <option v-for="b in BANK_OPTIONS" :key="b" :value="b" />
             </datalist>
             <p v-if="nameError" id="fv-name-err" class="mt-1 text-xs text-destructive font-medium">
-              {{ nameError }}
+              {{ nameError ? t('editorAccountError') : '' }}
             </p>
           </div>
 
           <!-- Currency -->
           <div>
-            <UiLabel class="text-xs font-medium">Currency</UiLabel>
+            <UiLabel class="text-xs font-medium">{{ t('editorCurrency') }}</UiLabel>
             <div class="mt-1.5 grid grid-cols-4 gap-1 rounded-xl bg-muted/40 p-1">
               <button
                 v-for="c in CASH_CURRENCIES"
@@ -522,29 +530,29 @@ async function save() {
 
           <!-- Amount -->
           <div>
-            <UiLabel for="fv-amount" class="text-xs font-medium">Amount</UiLabel>
+            <UiLabel for="fv-amount" class="text-xs font-medium">{{ t('editorAmount') }}</UiLabel>
             <UiInput
               id="fv-amount"
               :model-value="quantity"
               type="text"
               inputmode="decimal"
-              placeholder="e.g. 25,000,000"
+              :placeholder="t('editorAmountPlaceholder')"
               class="mt-1.5 h-10 rounded-xl"
               :aria-describedby="qtyError ? 'fv-amount-err' : undefined"
               @update:model-value="quantity = sanitizeDecimal(String($event))"
             />
             <p v-if="qtyError" id="fv-amount-err" class="mt-1 text-xs text-destructive font-medium">
-              {{ qtyError }}
+              {{ t('editorAmountError') }}
             </p>
           </div>
 
           <!-- Notes -->
           <div>
-            <UiLabel for="fv-cash-notes" class="text-xs font-medium">Notes (optional)</UiLabel>
+            <UiLabel for="fv-cash-notes" class="text-xs font-medium">{{ t('editorNotes') }}</UiLabel>
             <UiInput
               id="fv-cash-notes"
               v-model="notes"
-              placeholder="e.g. Emergency fund"
+              :placeholder="t('editorNotesPlaceholder')"
               class="mt-1.5 h-10 rounded-xl"
             />
           </div>
@@ -555,7 +563,7 @@ async function save() {
               class="h-11 rounded-full w-full bg-foreground text-background font-medium text-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Loader2 v-if="submitting" class="size-3.5 animate-spin" aria-hidden="true" />
-              {{ isEdit ? 'Save' : 'Add Cash' }}
+              {{ isEdit ? t('editorSave') : t('editorAddCash') }}
             </button>
           </UiDialogFooter>
         </form>
@@ -569,7 +577,7 @@ async function save() {
           @click="back"
         >
           <ArrowLeft class="size-3.5" aria-hidden="true" />
-          Back
+          {{ t('editorBack') }}
         </button>
 
         <!-- Selected Asset Card -->
@@ -594,7 +602,7 @@ async function save() {
           class="mt-2 flex items-center justify-between rounded-xl bg-muted/50 border border-border/60 px-3 py-1.5 text-xs"
         >
           <span class="text-muted-foreground">
-            Market price: <strong class="text-foreground">{{ formatCurrency(liveQuote.price, currency) }}</strong>
+            {{ t('editorMarketPrice', { price: formatCurrency(liveQuote.price, currency) }) }}
           </span>
           <button
             type="button"
@@ -602,7 +610,7 @@ async function save() {
             @click="useMarketPrice"
           >
             <Zap class="size-3 text-muted-foreground" />
-            Use price
+            {{ t('editorUsePrice') }}
           </button>
         </div>
 
@@ -615,13 +623,13 @@ async function save() {
               type="checkbox"
               class="size-4 rounded border-border/70 text-foreground focus:ring-ring"
             />
-            <UiLabel for="fv-is-cash" class="text-xs font-medium cursor-pointer">Count as Cash / Stablecoin</UiLabel>
+            <UiLabel for="fv-is-cash" class="text-xs font-medium cursor-pointer">{{ t('editorCountAsCash') }}</UiLabel>
           </div>
 
           <!-- Quantity / Amount -->
           <div>
             <div class="flex items-center justify-between">
-              <UiLabel for="fv-qty" class="text-xs font-medium">{{ isCash ? 'Amount' : 'Quantity' }}</UiLabel>
+              <UiLabel for="fv-qty" class="text-xs font-medium">{{ isCash ? t('editorAmount') : t('editorQuantity') }}</UiLabel>
               <div v-if="!isCash" class="flex items-center gap-1">
                 <button
                   v-for="delta in (selectedSymbol.endsWith('.JK') ? [100, 500, 1000] : [1, 5, 10, 50])"
@@ -639,37 +647,37 @@ async function save() {
               :model-value="quantity"
               type="text"
               inputmode="decimal"
-              placeholder="e.g. 10"
+              :placeholder="t('editorQtyPlaceholder')"
               class="mt-1.5 h-10 rounded-xl"
               :aria-describedby="qtyError ? 'fv-qty-err' : undefined"
               @update:model-value="quantity = sanitizeDecimal(String($event))"
             />
             <p v-if="qtyError" id="fv-qty-err" class="mt-1 text-xs text-destructive font-medium">
-              {{ qtyError }}
+              {{ t('editorQtyError') }}
             </p>
           </div>
 
           <!-- Average Cost (hide if cash) -->
           <div v-if="!isCash">
-            <UiLabel for="fv-cost" class="text-xs font-medium">Average Cost</UiLabel>
+            <UiLabel for="fv-cost" class="text-xs font-medium">{{ t('editorAvgCost') }}</UiLabel>
             <UiInput
               id="fv-cost"
               :model-value="averageCost"
               type="text"
               inputmode="decimal"
-              placeholder="e.g. 150.25"
+              :placeholder="t('editorCostPlaceholder')"
               class="mt-1.5 h-10 rounded-xl"
               :aria-describedby="costError ? 'fv-cost-err' : undefined"
               @update:model-value="averageCost = sanitizeDecimal(String($event))"
             />
             <p v-if="costError" id="fv-cost-err" class="mt-1 text-xs text-destructive font-medium">
-              {{ costError }}
+              {{ t('editorCostError') }}
             </p>
           </div>
 
           <!-- Estimated Total -->
           <div v-if="estimatedTotal > 0 && !isCash" class="rounded-xl border border-border/60 bg-muted/30 p-2.5 flex items-center justify-between text-xs">
-            <span class="text-muted-foreground">Est. Investment</span>
+            <span class="text-muted-foreground">{{ t('editorEstInvestment') }}</span>
             <span class="font-semibold tabular-nums text-foreground">
               {{ formatCurrency(estimatedTotal, currency) }}
             </span>
@@ -678,7 +686,7 @@ async function save() {
           <!-- Currency & Notes -->
           <div class="grid grid-cols-2 gap-2.5">
             <div>
-              <UiLabel for="fv-currency" class="text-xs font-medium">Currency</UiLabel>
+              <UiLabel for="fv-currency" class="text-xs font-medium">{{ t('editorCurrency') }}</UiLabel>
               <UiInput
                 id="fv-currency"
                 v-model="currency"
@@ -696,11 +704,11 @@ async function save() {
               </datalist>
             </div>
             <div>
-              <UiLabel for="fv-notes" class="text-xs font-medium">Notes (optional)</UiLabel>
+              <UiLabel for="fv-notes" class="text-xs font-medium">{{ t('editorNotes') }}</UiLabel>
               <UiInput
                 id="fv-notes"
                 v-model="notes"
-                placeholder="e.g. Core portfolio"
+                :placeholder="t('editorNotesPlaceholder')"
                 class="mt-1.5 h-10 rounded-xl"
               />
             </div>
@@ -713,7 +721,7 @@ async function save() {
               :disabled="submitting || !selectedSymbol"
             >
               <Loader2 v-if="submitting" class="size-3.5 animate-spin" aria-hidden="true" />
-              {{ isEdit ? 'Save' : 'Add Holding' }}
+              {{ isEdit ? t('editorSave') : t('editorAddTitle') }}
             </button>
           </UiDialogFooter>
         </form>

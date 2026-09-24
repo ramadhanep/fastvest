@@ -10,13 +10,15 @@ const emit = defineEmits<{
   close: []
   confirm: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
   <UiActionSheet :open="!!holding" @close="emit('close')">
     <div class="px-5 pt-4 pb-2" v-if="holding">
-      <p class="text-sm font-semibold">Delete {{ holding.symbol }}?</p>
-      <p class="text-[11px] text-muted-foreground mt-0.5">This removes the holding from your portfolio.</p>
+      <p class="text-sm font-semibold">{{ t('deleteTitle', { symbol: holding.symbol }) }}</p>
+      <p class="text-[11px] text-muted-foreground mt-0.5">{{ t('deleteBody') }}</p>
     </div>
     <div class="px-5 pt-1 pb-5">
       <button
@@ -25,7 +27,7 @@ const emit = defineEmits<{
         @click="emit('confirm')"
       >
         <Trash2 class="size-4" aria-hidden="true" />
-        Delete {{ holding?.symbol }}
+        {{ t('deleteAction', { symbol: holding?.symbol ?? '' }) }}
       </button>
     </div>
   </UiActionSheet>

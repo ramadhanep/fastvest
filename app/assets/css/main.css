@@ -137,7 +137,7 @@
 :root[data-font='sans'] .font-display,
 :root[data-font='sans'] .font-serif,
 :root[data-font='sans'] .font-heading {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
   letter-spacing: -0.02em;
 }
 

@@ -9,6 +9,7 @@ useHead({ title: 'Fastvest · Settings' })
 const { holdings, exportPortfolio, importPortfolio, resetPortfolio, loadDemoPortfolio } = usePortfolio()
 const canExport = computed(() => holdings.value.length > 0)
 const { preferences, setTheme, setRefreshInterval, setFontFamily, setCompactLayout } = usePreferences()
+const { t, locale, setLocale } = useI18n()
 const { online } = useConnection()
 const { clearCache } = useQuotes()
 
@@ -19,9 +20,9 @@ const pendingFile = ref<File | null>(null)
 const importBusy = ref(false)
 
 const THEME_OPTIONS = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+  { value: 'system', tkey: 'themeSystem' },
+  { value: 'light', tkey: 'themeLight' },
+  { value: 'dark', tkey: 'themeDark' },
 ] as const
 
 const INTERVALS = [
@@ -32,13 +33,18 @@ const INTERVALS = [
 ] as const
 
 const FONT_OPTIONS = [
-  { value: 'serif', label: 'Serif' },
-  { value: 'sans', label: 'Sans' },
+  { value: 'serif', tkey: 'fontSerif' },
+  { value: 'sans', tkey: 'fontSans' },
 ] as const
 
 const DENSITY_OPTIONS = [
-  { value: false, label: 'Comfortable' },
-  { value: true, label: 'Compact' },
+  { value: false, tkey: 'densityComfortable' },
+  { value: true, tkey: 'densityCompact' },
+] as const
+
+const LANGS = [
+  { value: 'en', tkey: 'langEn' },
+  { value: 'id', tkey: 'langId' },
 ] as const
 
 async function onFilePicked(e: Event) {
@@ -56,9 +62,9 @@ async function confirmImport() {
   try {
     const res = await importPortfolio(pendingFile.value)
     if (res.ok) {
-      toast.success('Portfolio imported')
+      toast.success(t('settingsImported'))
     } else {
-      toast.error('Import failed', { description: res.message })
+      toast.error(t('settingsImportFailed'), { description: res.message })
     }
   } finally {
     importBusy.value = false
@@ -70,7 +76,7 @@ async function confirmImport() {
 function confirmReset() {
   resetPortfolio()
   clearCache()
-  toast.success('Portfolio reset')
+  toast.success(t('settingsResetDone'))
   confirmResetOpen.value = false
 }
 
@@ -94,12 +100,12 @@ function formatBytes(bytes: number) {
     <div class="space-y-6 pb-12 px-4 sm:px-0">
       <!-- Appearance -->
       <section aria-labelledby="appearance-heading">
-        <h2 id="appearance-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Appearance</h2>
+        <h2 id="appearance-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{ t('settingsAppearance') }}</h2>
         <div class="rounded-2xl bg-card border border-border/30 overflow-hidden">
           <div class="flex items-center justify-between gap-3 px-4 py-3">
             <div>
-              <p class="text-sm font-medium">Theme</p>
-              <p class="text-[11px] text-muted-foreground mt-0.5">App color scheme</p>
+              <p class="text-sm font-medium">{{ t('settingsTheme') }}</p>
+              <p class="text-[11px] text-muted-foreground mt-0.5">{{ t('settingsThemeSub') }}</p>
             </div>
             <div class="flex gap-1">
               <button
@@ -110,7 +116,7 @@ function formatBytes(bytes: number) {
                 :class="preferences.theme === opt.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'"
                 @click="setTheme(opt.value)"
               >
-                {{ opt.label }}
+                {{ t(opt.tkey) }}
               </button>
             </div>
           </div>
@@ -120,8 +126,8 @@ function formatBytes(bytes: number) {
                 <span class="font-serif text-[13px] font-semibold">Aa</span>
               </span>
               <div>
-                <p class="text-sm font-medium">Typography</p>
-                <p class="text-[11px] text-muted-foreground mt-0.5">Serif or sans-serif typeface</p>
+                <p class="text-sm font-medium">{{ t('settingsTypography') }}</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">{{ t('settingsTypographySub') }}</p>
               </div>
             </div>
             <div class="flex gap-1">
@@ -133,7 +139,7 @@ function formatBytes(bytes: number) {
                 :class="preferences.fontFamily === opt.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'"
                 @click="setFontFamily(opt.value)"
               >
-                <span :class="opt.value === 'serif' ? 'font-serif' : 'font-sans'">{{ opt.label }}</span>
+                <span :class="opt.value === 'serif' ? 'font-serif' : 'font-sans'">{{ t(opt.tkey) }}</span>
               </button>
             </div>
           </div>
@@ -143,20 +149,20 @@ function formatBytes(bytes: number) {
                 <span class="text-xs font-medium">≡</span>
               </span>
               <div>
-                <p class="text-sm font-medium">Density</p>
-                <p class="text-[11px] text-muted-foreground mt-0.5">Compact or comfortable spacing</p>
+                <p class="text-sm font-medium">{{ t('settingsDensity') }}</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">{{ t('settingsDensitySub') }}</p>
               </div>
             </div>
             <div class="flex gap-1">
               <button
                 v-for="d in DENSITY_OPTIONS"
-                :key="d.label"
+                :key="String(d.value)"
                 type="button"
                 class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ios-press"
                 :class="preferences.compactLayout === d.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'"
                 @click="setCompactLayout(d.value)"
               >
-                {{ d.label }}
+                {{ t(d.tkey) }}
               </button>
             </div>
           </div>
@@ -164,8 +170,8 @@ function formatBytes(bytes: number) {
             <div class="flex items-center gap-3">
               <RefreshCw class="size-4 text-muted-foreground" aria-hidden="true" />
               <div>
-                <p class="text-sm font-medium">Auto Refresh</p>
-                <p class="text-[11px] text-muted-foreground mt-0.5">Price update frequency</p>
+                <p class="text-sm font-medium">{{ t('settingsAutoRefresh') }}</p>
+                <p class="text-[11px] text-muted-foreground mt-0.5">{{ t('settingsAutoRefreshSub') }}</p>
               </div>
             </div>
             <div class="flex gap-1">
@@ -181,20 +187,36 @@ function formatBytes(bytes: number) {
               </button>
             </div>
           </div>
+          <div class="border-t border-border/30 px-4 py-3 flex items-center justify-between gap-3">
+            <div>
+              <p class="text-sm font-medium">{{ t('settingsLanguage') }}</p>
+              <p class="text-[11px] text-muted-foreground mt-0.5">{{ t('settingsLanguageSub') }}</p>
+            </div>
+            <div class="flex gap-1">
+              <button
+                v-for="l in LANGS"
+                :key="l.value"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer ios-press"
+                :class="locale === l.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground'"
+                @click="setLocale(l.value)"
+              >
+                {{ t(l.tkey) }}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
-
-      <!-- Data -->
       <section aria-labelledby="data-heading">
-        <h2 id="data-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Data</h2>
+        <h2 id="data-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{ t('settingsData') }}</h2>
         <div class="rounded-2xl bg-card border border-border/30 overflow-hidden divide-y divide-border/30">
           <button type="button" class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/30 cursor-pointer" :disabled="!canExport" @click="exportPortfolio">
             <span class="size-7 rounded-lg bg-muted inline-flex items-center justify-center">
               <Download class="size-3.5 text-muted-foreground" aria-hidden="true" />
             </span>
             <span class="flex-1">
-              <span class="text-sm font-medium block">Export</span>
-              <span class="text-[11px] text-muted-foreground block mt-0.5">Backup to JSON file</span>
+              <span class="text-sm font-medium block">{{ t('settingsExport') }}</span>
+              <span class="text-[11px] text-muted-foreground block mt-0.5">{{ t('settingsExportSub') }}</span>
             </span>
           </button>
           <button type="button" class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/30 cursor-pointer" @click="fileInput?.click()">
@@ -202,8 +224,8 @@ function formatBytes(bytes: number) {
               <Upload class="size-3.5 text-muted-foreground" aria-hidden="true" />
             </span>
             <span class="flex-1">
-              <span class="text-sm font-medium block">Import</span>
-              <span class="text-[11px] text-muted-foreground block mt-0.5">Restore from backup</span>
+              <span class="text-sm font-medium block">{{ t('settingsImport') }}</span>
+              <span class="text-[11px] text-muted-foreground block mt-0.5">{{ t('settingsImportSub') }}</span>
             </span>
           </button>
           <button type="button" class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/30 cursor-pointer" @click="loadDemoPortfolio">
@@ -211,8 +233,8 @@ function formatBytes(bytes: number) {
               <Layers class="size-3.5 text-muted-foreground" aria-hidden="true" />
             </span>
             <span class="flex-1">
-              <span class="text-sm font-medium block">Demo Data</span>
-              <span class="text-[11px] text-muted-foreground block mt-0.5">Load sample portfolio</span>
+              <span class="text-sm font-medium block">{{ t('settingsDemoData') }}</span>
+              <span class="text-[11px] text-muted-foreground block mt-0.5">{{ t('settingsDemoDataSub') }}</span>
             </span>
           </button>
           <button type="button" class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/30 cursor-pointer" @click="confirmResetOpen = true">
@@ -220,32 +242,32 @@ function formatBytes(bytes: number) {
               <Trash2 class="size-3.5 text-destructive" aria-hidden="true" />
             </span>
             <span class="flex-1">
-              <span class="text-sm font-medium text-destructive block">Reset All</span>
-              <span class="text-[11px] text-muted-foreground block mt-0.5">Clear all holdings and data</span>
+              <span class="text-sm font-medium text-destructive block">{{ t('settingsReset') }}</span>
+              <span class="text-[11px] text-muted-foreground block mt-0.5">{{ t('settingsResetSub') }}</span>
             </span>
           </button>
         </div>
         <input ref="fileInput" type="file" accept="application/json,.json" class="sr-only" aria-hidden="true" tabindex="-1" @change="onFilePicked" />
-        <p v-if="storageEstimate" class="mt-2 px-1 text-[11px] text-muted-foreground">Storage used: {{ storageEstimate }}</p>
+        <p v-if="storageEstimate" class="mt-2 px-1 text-[11px] text-muted-foreground">{{ t('settingsStorageUsed', { size: storageEstimate }) }}</p>
       </section>
 
       <!-- About -->
       <section aria-labelledby="about-heading">
-        <h2 id="about-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">About</h2>
+        <h2 id="about-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{ t('settingsAbout') }}</h2>
         <div class="rounded-2xl bg-card border border-border/30 overflow-hidden divide-y divide-border/30">
           <div class="px-4 py-3">
             <p class="text-sm font-medium">Fastvest</p>
-            <p class="text-[11px] text-muted-foreground mt-0.5">Local-first portfolio tracker · Yahoo Finance</p>
+            <p class="text-[11px] text-muted-foreground mt-0.5">{{ t('settingsAboutText') }}</p>
           </div>
           <div class="px-4 py-3 flex items-center justify-between">
-            <span class="text-sm font-medium">Status</span>
+            <span class="text-sm font-medium">{{ t('settingsStatus') }}</span>
             <span class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <span class="inline-block size-2 rounded-full" :class="online ? 'bg-emerald-500' : 'bg-amber-500'" aria-hidden="true" />
-              {{ online ? 'Connected' : 'Offline' }}
+              {{ online ? t('settingsConnected') : t('settingsOffline') }}
             </span>
           </div>
           <a href="https://github.com/ramadhanep/fastvest" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors active:bg-muted/30 cursor-pointer">
-            View Source
+            {{ t('settingsViewSource') }}
             <ExternalLink class="size-3.5 text-muted-foreground" aria-hidden="true" />
           </a>
         </div>
@@ -256,15 +278,15 @@ function formatBytes(bytes: number) {
     <UiAlertDialog :open="confirmImportOpen" @update:open="(v: boolean) => (confirmImportOpen = v)">
       <UiAlertDialogContent class="sm:max-w-md rounded-2xl p-5 border border-border/50 bg-card">
         <UiAlertDialogHeader>
-          <UiAlertDialogTitle class="text-base font-semibold">Import portfolio?</UiAlertDialogTitle>
+          <UiAlertDialogTitle class="text-base font-semibold">{{ t('settingsImportTitle') }}</UiAlertDialogTitle>
           <UiAlertDialogDescription class="text-xs text-muted-foreground">
-            This replaces your current {{ holdings.length }} holding{{ holdings.length === 1 ? '' : 's' }}.
+            {{ t('settingsImportBody', { count: holdings.length, s: holdings.length === 1 ? '' : 's' }) }}
           </UiAlertDialogDescription>
         </UiAlertDialogHeader>
         <UiAlertDialogFooter class="mt-4 flex gap-2">
-          <UiAlertDialogCancel class="rounded-full h-10 flex-1 text-xs">Cancel</UiAlertDialogCancel>
+          <UiAlertDialogCancel class="rounded-full h-10 flex-1 text-xs">{{ t('settingsImportCancel') }}</UiAlertDialogCancel>
           <UiAlertDialogAction class="rounded-full h-10 flex-1 text-xs" :disabled="importBusy" @click="confirmImport">
-            {{ importBusy ? 'Importing…' : 'Import' }}
+            {{ importBusy ? t('settingsImporting') : t('settingsImportConfirm') }}
           </UiAlertDialogAction>
         </UiAlertDialogFooter>
       </UiAlertDialogContent>
@@ -273,15 +295,15 @@ function formatBytes(bytes: number) {
     <UiAlertDialog :open="confirmResetOpen" @update:open="(v: boolean) => (confirmResetOpen = v)">
       <UiAlertDialogContent class="sm:max-w-md rounded-2xl p-5 border border-border/50 bg-card">
         <UiAlertDialogHeader>
-          <UiAlertDialogTitle class="text-base font-semibold">Reset portfolio?</UiAlertDialogTitle>
+          <UiAlertDialogTitle class="text-base font-semibold">{{ t('settingsResetTitle') }}</UiAlertDialogTitle>
           <UiAlertDialogDescription class="text-xs text-muted-foreground">
-            This removes all holdings and cached quotes from this browser.
+            {{ t('settingsResetBody') }}
           </UiAlertDialogDescription>
         </UiAlertDialogHeader>
         <UiAlertDialogFooter class="mt-4 flex gap-2">
-          <UiAlertDialogCancel class="rounded-full h-10 flex-1 text-xs">Cancel</UiAlertDialogCancel>
+          <UiAlertDialogCancel class="rounded-full h-10 flex-1 text-xs">{{ t('settingsImportCancel') }}</UiAlertDialogCancel>
           <UiAlertDialogAction class="rounded-full h-10 flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs" @click="confirmReset">
-            Reset
+            {{ t('settingsResetConfirm') }}
           </UiAlertDialogAction>
         </UiAlertDialogFooter>
       </UiAlertDialogContent>

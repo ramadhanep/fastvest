@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
+const { t } = useI18n()
 
 const tooltipBg = computed(() => (isDark.value ? 'rgba(28,28,30,0.92)' : 'rgba(255,255,255,0.96)'))
 const tooltipBorder = computed(() => (isDark.value ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'))
@@ -68,7 +69,7 @@ const option = computed(() => ({
     formatter: (p: TooltipParam) => {
       const pct = total.value ? (p.value / total.value) * 100 : 0
       const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`
-      return `<div style="font-size:12px">${dot}<strong>${p.name}</strong> · <span style="opacity:.7">${formatCompact(p.value)}</span></div><div style="font-size:11px;opacity:.7">${pct.toFixed(1)}% of portfolio</div>`
+      return `<div style="font-size:12px">${dot}<strong>${p.name}</strong> · <span style="opacity:.7">${formatCompact(p.value)}</span></div><div style="font-size:11px;opacity:.7">${t('allocationOfPortfolio', { pct: pct.toFixed(1) })}</div>`
     },
   },
   series: [
@@ -104,7 +105,7 @@ defineExpose({ resize })
 </script>
 
 <template>
-  <div role="img" :style="{ width: `${size}px` }" :aria-label="`Portfolio allocation: ${total ? total.toLocaleString('en-US', { maximumFractionDigits: 0 }) : 0} total, ${segments.length} assets`">
+  <div role="img" :style="{ width: `${size}px` }" :aria-label="t('allocationAria', { total: total ? total.toLocaleString('en-US', { maximumFractionDigits: 0 }) : 0, assets: segments.length })">
     <VChart
       ref="chartRef"
       class="w-full"

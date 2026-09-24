@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { ChevronDown, Pencil, Trash2 } from '@lucide/vue'
 import type { Holding, Quote, SortKey } from '#shared/types'
+import type { I18nKey } from '~/i18n/en'
 import { calculateHoldingMetrics } from '~/utils/calculations'
 import { formatCurrency, formatNumber, formatPercent, formatQuantity } from '~/utils/format'
 import { useExchangeRates } from '~/composables/useExchangeRates'
@@ -20,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
+const { t } = useI18n()
 onMounted(ensureRates)
 
 const route = useRoute()
@@ -33,13 +35,17 @@ const sortDir = ref<'asc' | 'desc'>('desc')
 const filterStatus = ref<'all' | 'gain' | 'loss'>('all')
 const swipedId = ref<string | null>(null)
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'weight', label: 'Portfolio Weight' },
-  { key: 'value', label: 'Market Value' },
-  { key: 'pnl', label: 'Total Return' },
-  { key: 'day', label: 'Day Change' },
-  { key: 'symbol', label: 'Symbol' },
-]
+const SORT_LABEL_KEYS: Record<SortKey, I18nKey> = {
+  weight: 'sortWeight',
+  value: 'sortValue',
+  pnl: 'sortPnl',
+  day: 'sortDay',
+  symbol: 'sortSymbol',
+}
+
+const SORT_OPTIONS = computed(() =>
+  (Object.keys(SORT_LABEL_KEYS) as SortKey[]).map((key) => ({ key, label: t(SORT_LABEL_KEYS[key]) })),
+)
 
 const rows = computed(() => {
   let list = props.holdings
@@ -93,8 +99,7 @@ const rows = computed(() => {
 })
 
 function sortLabel(key: SortKey) {
-  const opt = SORT_OPTIONS.find((o) => o.key === key)
-  return opt ? opt.label : ''
+  return t(SORT_LABEL_KEYS[key])
 }
 
 let touchStartX = 0
@@ -185,13 +190,13 @@ function onRowClick(h: Holding) {
   <section class="mt-4" aria-labelledby="holdings-heading">
     <!-- Header: Title & Sort/Add controls -->
     <div class="flex items-center justify-between gap-2">
-      <h2 id="holdings-heading" class="text-sm font-semibold tracking-tight">Holdings</h2>
+      <h2 id="holdings-heading" class="text-sm font-semibold tracking-tight">{{ t('holdingsTitle') }}</h2>
 
       <div class="flex items-center gap-1.5">
         <div class="relative">
           <select
             v-model="sortKey"
-            :aria-label="`Sort holdings by ${sortLabel(sortKey)}`"
+            :aria-label="t('sortByAria', { label: sortLabel(sortKey) })"
             class="appearance-none h-9 pl-3.5 pr-8 rounded-full bg-muted text-xs font-medium text-foreground cursor-pointer border border-border/60 outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option v-for="opt in SORT_OPTIONS" :key="opt.key" :value="opt.key" class="py-1">
@@ -206,7 +211,7 @@ function onRowClick(h: Holding) {
     <!-- Filter Pills -->
     <div class="mt-3 flex items-center gap-2">
       <button
-        v-for="f in ([{ key: 'all', label: 'All' }, { key: 'gain', label: 'Gains' }, { key: 'loss', label: 'Losses' }] as const)"
+        v-for="f in ([{ key: 'all', label: t('filterAll') }, { key: 'gain', label: t('filterGains') }, { key: 'loss', label: t('filterLosses') }] as const)"
         :key="f.key"
         type="button"
         class="rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors cursor-pointer"

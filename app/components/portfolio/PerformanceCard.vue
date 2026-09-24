@@ -9,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
+const { t } = useI18n()
 
 const RANGES = [
   { label: '1M', range: '1mo' },
@@ -112,7 +113,7 @@ const hasCash = computed(() => props.holdings.some((h) => h.isCash))
       :aria-expanded="isOpen"
       @click="onToggle"
     >
-      <span>Performance</span>
+      <span>{{ t('performanceTitle') }}</span>
       <svg
         class="size-4 text-muted-foreground transition-transform duration-300 ease-out"
         :class="isOpen ? 'rotate-180' : 'rotate-0'"
@@ -156,23 +157,23 @@ const hasCash = computed(() => props.holdings.some((h) => h.isCash))
               :height="200"
             />
             <div v-else-if="loading && !data" class="text-xs text-muted-foreground">
-              Loading history…
+              {{ t('performanceLoading') }}
             </div>
             <p v-else class="text-xs text-muted-foreground text-center px-4">
-              {{ error ? 'History unavailable right now.' : data && data.length < 2 ? 'Not enough history yet.' : 'Holdings will appear here once they have market history.' }}
+              {{ error ? t('performanceUnavailable') : data && data.length < 2 ? t('performanceNotEnough') : t('performanceEmpty') }}
             </p>
           </div>
 
           <p v-if="periodChange" class="mt-3 flex items-center justify-center gap-1.5 text-xs font-medium tabular-nums">
             <span class="inline-flex items-center gap-1.5" :class="isGain ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
               {{ isGain ? '+' : '' }}{{ formatCurrency(periodChange.change, 'USD') }}
-              <span class="text-muted-foreground">{{ formatPercent(periodChange.percent) }} over range</span>
+              <span class="text-muted-foreground">{{ formatPercent(periodChange.percent) }} {{ t('performanceOverRange') }}</span>
             </span>
           </p>
 
           <p class="mt-3 text-[10px] leading-relaxed text-muted-foreground">
-            Reconstructed from saved holdings and historical prices, since each symbol was added. FX converted at latest rates.
-            {{ hasCash ? 'Cash holdings included as flat amounts. ' : '' }}Not financial advice.
+            {{ t('performanceFooter') }}
+            {{ hasCash ? t('performanceCash') + ' ' : '' }}{{ t('performanceAdvice') }}
           </p>
         </div>
       </div>
