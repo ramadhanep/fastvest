@@ -36,9 +36,22 @@ onMounted(() => {
   onUnmounted(() => window.removeEventListener('scroll', onScroll))
 })
 
-const glassStyle = computed(() =>
-  props.brandColor ? { backgroundColor: `${props.brandColor}${scrolled.value ? '30' : '1c'}` } : {},
-)
+// Light-neutral brand colors (grays) glare in dark mode — clamp them to Apple ink.
+function darkModeTint(hex: string): string {
+  if (!isDark.value) return hex
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const isGray = Math.abs(r - g) < 40 && Math.abs(g - b) < 40
+  return isGray && Math.min(r, g, b) > 45 ? '#1D1D1F' : hex
+}
+
+const glassStyle = computed(() => {
+  if (!props.brandColor) return {}
+  const base = darkModeTint(props.brandColor)
+  const alpha = isDark.value && base === '#1D1D1F' ? (scrolled.value ? '40' : '2b') : (scrolled.value ? '30' : '1c')
+  return { backgroundColor: `${base}${alpha}` }
+})
 </script>
 
 <template>
