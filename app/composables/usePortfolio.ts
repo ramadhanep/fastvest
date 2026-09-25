@@ -1,9 +1,19 @@
 import { portfolioFileSchema, holdingSchema } from '#shared/schemas/holding'
 import type { Holding, PortfolioFile } from '#shared/types'
 import { kv, storageGet, storageSet, storageRemove } from '~/lib/storage'
+import { BackupError, decodeBackup, encodeBackup, isBackupCode } from '~/lib/backup'
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import { useWatchlist } from './useWatchlist'
+
+export type ImportErrorCode = 'encrypted' | 'format' | 'read' | 'weakPass' | 'wrongPass' | 'corrupt'
+
+export interface ImportResult {
+  ok: boolean
+  code?: ImportErrorCode
+  /** Raw container text when the caller must ask for a passphrase. */
+  backupCode?: string
+}
 
 const { t } = useI18n()
 
@@ -171,48 +181,75 @@ export function usePortfolio() {
     if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_DISMISSED_KEY, 'true')
   }
 
-  function exportPortfolio() {
-    const payload: PortfolioFile = {
+  function buildPayload(): PortfolioFile {
+    return {
       version: 1,
       exportedAt: new Date().toISOString(),
       holdings: holdings.value,
     }
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
+  }
+
+  function applyHoldings(next: z.infer<typeof holdingSchema>[]) {
+    holdings.value = structuredClone(next).map((h) => ({
+      ...h,
+      createdAt: h.createdAt ?? h.id,
+    }))
+    isDemoPortfolio.value = false
+    if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
+    useWatchlist().resetDemoWatchlist()
+    persist()
+  }
+
+  function download(content: string, filename: string, type: string) {
+    const url = URL.createObjectURL(new Blob([content], { type }))
     const a = document.createElement('a')
     a.href = url
-    a.download = 'fastvest-portfolio.json'
+    a.download = filename
     a.click()
     URL.revokeObjectURL(url)
   }
 
-  function importPortfolio(file: File): Promise<{ ok: boolean; message?: string }> {
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        try {
-          const raw = JSON.parse(String(reader.result))
-          const parsed = portfolioFileSchema.safeParse(raw)
-          if (!parsed.success) {
-            resolve({ ok: false, message: 'That file is not a valid Fastvest portfolio.' })
-            return
-          }
-          holdings.value = structuredClone(parsed.data.holdings).map((h) => ({
-            ...h,
-            createdAt: h.createdAt ?? h.id,
-          }))
-          isDemoPortfolio.value = false
-          if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
-          useWatchlist().resetDemoWatchlist()
-          persist()
-          resolve({ ok: true })
-        } catch {
-          resolve({ ok: false, message: 'That file could not be read as JSON.' })
-        }
-      }
-      reader.onerror = () => resolve({ ok: false, message: 'That file could not be read.' })
-      reader.readAsText(file)
-    })
+  function exportPortfolio() {
+    download(JSON.stringify(buildPayload(), null, 2), 'fastvest-portfolio.json', 'application/json')
+  }
+
+  function saveBackupFile(code: string) {
+    download(code, 'fastvest-backup.fvenc', 'text/plain')
+  }
+
+  function buildBackupCode(passphrase: string): Promise<string> {
+    return encodeBackup(buildPayload(), passphrase)
+  }
+
+  async function applyBackupCode(code: string, passphrase: string): Promise<ImportResult> {
+    let raw: unknown
+    try {
+      raw = await decodeBackup(code, passphrase)
+    } catch (e) {
+      return { ok: false, code: e instanceof BackupError ? e.code : 'corrupt' }
+    }
+    const parsed = portfolioFileSchema.safeParse(raw)
+    if (!parsed.success) return { ok: false, code: 'format' }
+    applyHoldings(parsed.data.holdings)
+    return { ok: true }
+  }
+
+  async function importPortfolio(file: File): Promise<ImportResult> {
+    let text: string
+    try {
+      text = await file.text()
+    } catch {
+      return { ok: false, code: 'read' }
+    }
+    if (isBackupCode(text)) return { ok: false, code: 'encrypted', backupCode: text }
+    try {
+      const parsed = portfolioFileSchema.safeParse(JSON.parse(text))
+      if (!parsed.success) return { ok: false, code: 'format' }
+      applyHoldings(parsed.data.holdings)
+      return { ok: true }
+    } catch {
+      return { ok: false, code: 'format' }
+    }
   }
 
   function resetPortfolio() {
@@ -235,6 +272,9 @@ export function usePortfolio() {
     updateHolding,
     removeHolding,
     exportPortfolio,
+    saveBackupFile,
+    buildBackupCode,
+    applyBackupCode,
     importPortfolio,
     resetPortfolio,
     clearDemoPortfolio,

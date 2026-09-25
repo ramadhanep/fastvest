@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Download, Upload, Trash2, RefreshCw, Layers, ExternalLink } from '@lucide/vue'
+import { Upload, Trash2, RefreshCw, Layers, ExternalLink, Share2, Copy, Check, FileDown } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 import type { ThemePreference } from '~/composables/usePreferences'
+import type { ImportErrorCode } from '~/composables/usePortfolio'
+import { MIN_PASSPHRASE } from '~/lib/backup'
 
 useHead({ title: 'Fastvest · Settings' })
 
-const { holdings, exportPortfolio, importPortfolio, resetPortfolio, loadDemoPortfolio } = usePortfolio()
+const { holdings, exportPortfolio, saveBackupFile, buildBackupCode, applyBackupCode, importPortfolio, resetPortfolio, loadDemoPortfolio } = usePortfolio()
 const canExport = computed(() => holdings.value.length > 0)
 const { preferences, setTheme, setRefreshInterval, setFontFamily, setCompactLayout } = usePreferences()
 const { t, locale, setLocale } = useI18n()
@@ -18,6 +20,71 @@ const confirmImportOpen = ref(false)
 const confirmResetOpen = ref(false)
 const pendingFile = ref<File | null>(null)
 const importBusy = ref(false)
+
+const transferOpen = ref(false)
+const transferMode = ref<'create' | 'enter'>('create')
+const passphrase = ref('')
+const transferCode = ref('')
+const transferError = ref('')
+const transferBusy = ref(false)
+const copied = ref(false)
+
+const passTooShort = computed(() => passphrase.value.trim().length < MIN_PASSPHRASE)
+
+const IMPORT_ERROR_KEYS: Record<ImportErrorCode, 'transferErrWeakPass' | 'transferErrWrongPass' | 'transferErrCorrupt' | 'transferErrFormat' | 'transferErrRead'> = {
+  weakPass: 'transferErrWeakPass',
+  wrongPass: 'transferErrWrongPass',
+  corrupt: 'transferErrCorrupt',
+  format: 'transferErrFormat',
+  read: 'transferErrRead',
+  encrypted: 'transferErrFormat',
+}
+
+function openTransfer(mode?: 'create' | 'enter', code = '') {
+  transferMode.value = mode ?? (canExport.value ? 'create' : 'enter')
+  passphrase.value = ''
+  transferCode.value = code
+  transferError.value = ''
+  copied.value = false
+  transferOpen.value = true
+}
+
+async function createTransferCode() {
+  if (passTooShort.value) return
+  transferBusy.value = true
+  try {
+    transferCode.value = await buildBackupCode(passphrase.value)
+    transferError.value = ''
+  } catch {
+    transferError.value = t('transferErrWeakPass')
+  } finally {
+    transferBusy.value = false
+  }
+}
+
+async function copyTransferCode() {
+  if (!transferCode.value) return
+  await navigator.clipboard.writeText(transferCode.value)
+  copied.value = true
+  toast.success(t('transferCopiedToast'))
+}
+
+async function restoreTransferCode() {
+  if (!transferCode.value || passTooShort.value) return
+  transferBusy.value = true
+  try {
+    const res = await applyBackupCode(transferCode.value, passphrase.value)
+    if (res.ok) {
+      clearCache()
+      transferOpen.value = false
+      toast.success(t('settingsImported'))
+    } else {
+      transferError.value = t(IMPORT_ERROR_KEYS[res.code ?? 'corrupt'])
+    }
+  } finally {
+    transferBusy.value = false
+  }
+}
 
 const THEME_OPTIONS = [
   { value: 'system', tkey: 'themeSystem' },
@@ -58,18 +125,21 @@ async function onFilePicked(e: Event) {
 
 async function confirmImport() {
   if (!pendingFile.value) return
+  const file = pendingFile.value
   importBusy.value = true
+  pendingFile.value = null
+  confirmImportOpen.value = false
   try {
-    const res = await importPortfolio(pendingFile.value)
+    const res = await importPortfolio(file)
     if (res.ok) {
       toast.success(t('settingsImported'))
+    } else if (res.code === 'encrypted') {
+      openTransfer('enter', res.backupCode ?? '')
     } else {
-      toast.error(t('settingsImportFailed'), { description: res.message })
+      toast.error(t('settingsImportFailed'), { description: t(IMPORT_ERROR_KEYS[res.code ?? 'format']) })
     }
   } finally {
     importBusy.value = false
-    pendingFile.value = null
-    confirmImportOpen.value = false
   }
 }
 
@@ -210,13 +280,13 @@ function formatBytes(bytes: number) {
       <section aria-labelledby="data-heading">
         <h2 id="data-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{ t('settingsData') }}</h2>
         <div class="rounded-2xl bg-card border border-border/30 overflow-hidden divide-y divide-border/30">
-          <button type="button" class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/30 cursor-pointer" :disabled="!canExport" @click="exportPortfolio">
+          <button type="button" class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/30 cursor-pointer" @click="openTransfer()">
             <span class="size-7 rounded-lg bg-muted inline-flex items-center justify-center">
-              <Download class="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <Share2 class="size-3.5 text-muted-foreground" aria-hidden="true" />
             </span>
             <span class="flex-1">
-              <span class="text-sm font-medium block">{{ t('settingsExport') }}</span>
-              <span class="text-[11px] text-muted-foreground block mt-0.5">{{ t('settingsExportSub') }}</span>
+              <span class="text-sm font-medium block">{{ t('settingsTransfer') }}</span>
+              <span class="text-[11px] text-muted-foreground block mt-0.5">{{ t('settingsTransferSub') }}</span>
             </span>
           </button>
           <button type="button" class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-muted/30 cursor-pointer" @click="fileInput?.click()">
@@ -247,7 +317,15 @@ function formatBytes(bytes: number) {
             </span>
           </button>
         </div>
-        <input ref="fileInput" type="file" accept="application/json,.json" class="sr-only" aria-hidden="true" tabindex="-1" @change="onFilePicked" />
+        <input ref="fileInput" type="file" accept="application/json,.json,.fvenc,text/plain" class="sr-only" aria-hidden="true" tabindex="-1" @change="onFilePicked" />
+        <button
+          type="button"
+          class="mt-2 px-1 text-[11px] text-muted-foreground underline underline-offset-2 cursor-pointer disabled:opacity-40"
+          :disabled="!canExport"
+          @click="exportPortfolio"
+        >
+          {{ t('settingsExportLegacy') }}
+        </button>
         <p v-if="storageEstimate" class="mt-2 px-1 text-[11px] text-muted-foreground">{{ t('settingsStorageUsed', { size: storageEstimate }) }}</p>
       </section>
 
@@ -275,6 +353,121 @@ function formatBytes(bytes: number) {
     </div>
 
     <!-- Dialogs -->
+    <UiDialog :open="transferOpen" @update:open="(v: boolean) => transferOpen = v">
+      <UiDialogContent class="sm:max-w-md rounded-2xl p-5 border border-border/50 bg-card">
+        <UiDialogHeader class="text-left">
+          <UiDialogTitle class="text-base font-semibold">{{ t('transferTitle') }}</UiDialogTitle>
+        </UiDialogHeader>
+
+        <div class="mt-3 flex gap-1 rounded-xl bg-muted/40 p-1">
+          <button
+            type="button"
+            class="flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer"
+            :class="transferMode === 'create' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="transferMode = 'create'; transferError = ''"
+          >
+            {{ t('transferTabCreate') }}
+          </button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer"
+            :class="transferMode === 'enter' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'"
+            @click="transferMode = 'enter'; transferError = ''"
+          >
+            {{ t('transferTabReceive') }}
+          </button>
+        </div>
+
+        <div class="mt-4">
+          <UiLabel for="fv-pass" class="text-xs font-medium">{{ t('transferPassphrase') }}</UiLabel>
+          <UiInput
+            id="fv-pass"
+            v-model="passphrase"
+            type="password"
+            autocomplete="off"
+            spellcheck="false"
+            class="mt-1.5 h-10 rounded-xl"
+            autofocus
+            aria-describedby="fv-pass-hint"
+          />
+          <p id="fv-pass-hint" class="mt-1.5 text-[11px] text-muted-foreground">{{ t('transferPassphraseHint') }}</p>
+        </div>
+
+        <!-- Create -->
+        <div v-if="transferMode === 'create'" class="mt-4 space-y-3">
+          <div v-if="transferCode">
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="text-xs font-medium">{{ t('transferCodeOut') }}</span>
+              <span class="text-[11px] text-muted-foreground tabular-nums">{{ transferCode.length }} ch</span>
+            </div>
+            <UiTextarea
+              :model-value="transferCode"
+              readonly
+              rows="4"
+              spellcheck="false"
+              class="mt-1.5 rounded-xl font-mono text-[11px] leading-relaxed break-all resize-none"
+            />
+            <p class="mt-1.5 text-[11px] text-muted-foreground">{{ t('transferCodeOutHint', { size: transferCode.length }) }}</p>
+            <p class="mt-1 text-[11px] text-amber-600 dark:text-amber-400">{{ t('transferCodeSecret') }}</p>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="h-10 flex-1 rounded-full text-xs font-medium bg-foreground text-background inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                @click="copyTransferCode"
+              >
+                <Check v-if="copied" class="size-3.5" aria-hidden="true" />
+                <Copy v-else class="size-3.5" aria-hidden="true" />
+                {{ copied ? t('transferCopied') : t('transferCopy') }}
+              </button>
+              <button
+                type="button"
+                class="h-10 flex-1 rounded-full text-xs font-medium border border-border inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                @click="saveBackupFile(transferCode)"
+              >
+                <FileDown class="size-3.5" aria-hidden="true" />
+                {{ t('transferSaveFile') }}
+              </button>
+            </div>
+          </div>
+          <button
+            v-else
+            type="button"
+            class="w-full h-10 rounded-full text-xs font-medium bg-foreground text-background disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            :disabled="passTooShort || transferBusy || !canExport"
+            @click="createTransferCode"
+          >
+            {{ transferBusy ? '…' : t('transferCreate') }}
+          </button>
+        </div>
+
+        <!-- Enter -->
+        <div v-else class="mt-4 space-y-3">
+          <UiLabel for="fv-code" class="text-xs font-medium">{{ t('transferCodeIn') }}</UiLabel>
+          <UiTextarea
+            id="fv-code"
+            v-model="transferCode"
+            rows="4"
+            spellcheck="false"
+            class="rounded-xl font-mono text-[11px] leading-relaxed break-all resize-none"
+            placeholder="FV1B1-…"
+          />
+          <p class="text-[11px] text-muted-foreground">
+            {{ t('transferCodeInHint', { count: holdings.length, s: holdings.length === 1 ? '' : 's' }) }}
+          </p>
+          <button
+            type="button"
+            class="w-full h-10 rounded-full text-xs font-medium bg-foreground text-background disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            :disabled="passTooShort || transferBusy || !transferCode"
+            @click="restoreTransferCode"
+          >
+            {{ transferBusy ? '…' : t('transferRestore') }}
+          </button>
+        </div>
+
+        <p v-if="transferError" class="mt-3 text-xs font-medium text-destructive" role="alert">{{ transferError }}</p>
+      </UiDialogContent>
+    </UiDialog>
+
     <UiAlertDialog :open="confirmImportOpen" @update:open="(v: boolean) => (confirmImportOpen = v)">
       <UiAlertDialogContent class="sm:max-w-md rounded-2xl p-5 border border-border/50 bg-card">
         <UiAlertDialogHeader>

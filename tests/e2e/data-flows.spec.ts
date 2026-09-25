@@ -9,7 +9,7 @@ test.describe('Data flows', () => {
     await page.goto('/settings')
     await page.waitForLoadState('networkidle')
     const downloadPromise = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'Backup to JSON file' }).click()
+    await page.getByRole('button', { name: 'Export JSON (unencrypted, legacy)' }).click()
     const download = await downloadPromise
     expect(download.suggestedFilename()).toBe('fastvest-portfolio.json')
     const raw = await (await import('node:fs/promises')).readFile(await download.path(), 'utf8')
@@ -73,6 +73,61 @@ test.describe('Data flows', () => {
     await expect(page.getByText(/not a valid Fastvest portfolio/)).toBeVisible()
     await page.goto('/')
     await expectEmptyState(page)
+  })
+
+  test('transfer code round-trips a portfolio to another device', async ({ page, context }) => {
+    await startEmpty(page)
+    await addHolding(page, 'MSFT', '5', '400')
+
+    await page.goto('/settings')
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Move to another device' }).click()
+    await page.getByLabel('Passphrase').fill('tiger-cat-42')
+    await page.getByRole('button', { name: 'Create code', exact: true }).click()
+
+    const textarea = page.locator('textarea[readonly]')
+    await expect(textarea).toBeVisible()
+    const code = (await textarea.inputValue()).trim()
+    expect(code.startsWith('FV1B1-')).toBe(true)
+    await page.keyboard.press('Escape')
+
+    // Second device, clean storage.
+    const other = await context.browser()!.newContext()
+    const otherPage = await other.newPage()
+    await otherPage.addInitScript((key) => localStorage.setItem(key, 'true'), 'fastvest:demo_cleared')
+    await otherPage.goto('/settings')
+    await otherPage.waitForLoadState('networkidle')
+    await otherPage.getByRole('button', { name: 'Move to another device' }).click()
+
+    // Simulate a chat app mangling the pasted text.
+    const mangled = `  ${code.slice(0, 30)}\n${code.slice(30)}  `
+    await otherPage.getByLabel('Paste backup code').fill(mangled)
+    await otherPage.getByLabel('Passphrase').fill('tiger-cat-42')
+    await otherPage.getByRole('button', { name: 'Restore' }).click()
+    await expect(otherPage.getByText('Portfolio imported')).toBeVisible()
+    await otherPage.goto('/')
+    await expect(otherPage.getByText('MSFT', { exact: false }).first()).toBeVisible()
+    await other.close()
+  })
+
+  test('transfer code rejects a wrong passphrase without overwriting', async ({ page }) => {
+    await startEmpty(page)
+    await addHolding(page, 'AAPL', '10', '150')
+    await page.goto('/settings')
+    await page.waitForLoadState('networkidle')
+    await page.getByRole('button', { name: 'Move to another device' }).click()
+    await page.getByLabel('Passphrase').fill('right-passphrase')
+    await page.getByRole('button', { name: 'Create code', exact: true }).click()
+    const code = (await page.locator('textarea[readonly]').inputValue()).trim()
+
+    await page.getByRole('button', { name: 'Receive' }).click()
+    await page.getByLabel('Paste backup code').fill(code)
+    await page.getByLabel('Passphrase').fill('wrong-passphrase')
+    await page.getByRole('button', { name: 'Restore' }).click()
+    await expect(page.getByRole('alert')).toContainText('Wrong passphrase')
+
+    await page.goto('/')
+    await expect(page.getByText('AAPL', { exact: false }).first()).toBeVisible()
   })
 
   test('reset clears holdings back to empty state', async ({ page }) => {
