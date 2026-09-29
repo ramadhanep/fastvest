@@ -3,12 +3,12 @@ import { ref, computed } from 'vue'
 import { Pencil, Trash2, Loader2, Plus } from '@lucide/vue'
 import type { ChartData, ChartPoint, Holding } from '#shared/types'
 import { calculateHoldingMetrics } from '~/utils/calculations'
-import { formatCurrency, formatPercent, formatNumber, formatQuantity } from '~/utils/format'
+import { formatCurrency, formatPercent, formatNumber, formatQuantity, formatDate, formatTime } from '~/utils/format'
 import { brandColorFor } from '~/utils/brand-colors'
 
 const route = useRoute()
 const router = useRouter()
-const { holdings, removeHolding } = usePortfolio()
+const { holdings, loaded, removeHolding } = usePortfolio()
 const { has: hasWatch } = useWatchlist()
 const addModal = useAddHoldingModal()
 const quotes = useQuotes()
@@ -31,9 +31,12 @@ const quote = computed(() =>
 
 useHead({ title: () => symbol.value })
 
-if (!holding.value && !isWatch.value) {
-  router.replace('/')
-}
+// Wait for storage-backed portfolio to hydrate before deciding the route is invalid
+watchEffect(() => {
+  if (loaded.value && !holding.value && !isWatch.value) {
+    void router.replace('/')
+  }
+})
 
 function trackInPortfolio() {
   addModal.openWith(symbol.value)
@@ -122,6 +125,65 @@ const accentStyle = computed(() => {
   }
 })
 
+interface DetailRow {
+  key: string
+  label: string
+  value: string
+  sub?: string
+  tone?: 'gain' | 'loss'
+}
+
+function quoteRows(): DetailRow[] {
+  const rows: DetailRow[] = []
+  const cur = quote.value?.currency ?? holding.value?.currency ?? 'USD'
+  if (quote.value?.previousClose !== undefined) {
+    rows.push({ key: 'prev', label: t('detailPrevClose'), value: formatCurrency(quote.value.previousClose, cur) })
+  }
+  if (quote.value?.marketTime) {
+    rows.push({ key: 'updated', label: t('detailLastUpdate'), value: formatTime(quote.value.marketTime) })
+  }
+  return rows
+}
+
+const detailRows = computed<DetailRow[]>(() => {
+  const h = holding.value
+  const cur = quote.value?.currency ?? h?.currency ?? 'USD'
+  const m = metrics.value
+  const cash = isCashSymbol.value
+  if (!h) return quoteRows()
+  const rows: DetailRow[] = []
+  if (!cash) {
+    rows.push({ key: 'invested', label: t('detailInvested'), value: formatCurrency(m?.costBasis, cur) })
+  }
+  rows.push({ key: 'mv', label: t('detailMarketValue'), value: formatCurrency(m?.marketValue, cur) })
+  if (quote.value?.price) {
+    rows.push({
+      key: 'day',
+      label: t('detailDayChange'),
+      value: `${(m?.dayChange ?? 0) >= 0 ? '+' : ''}${formatCurrency(m?.dayChange, cur)}`,
+      sub: formatPercent(m?.dayChangePercent),
+      tone: (m?.dayChange ?? 0) >= 0 ? 'gain' : 'loss',
+    })
+  }
+  if (!cash) {
+    rows.push({
+      key: 'pnl',
+      label: t('detailTotalReturn'),
+      value: (m?.pnl ?? 0) >= 0 ? `+${formatCurrency(m?.pnl, cur)}` : formatCurrency(m?.pnl, cur),
+      sub: formatPercent(m?.pnlPercent),
+      tone: (m?.pnl ?? 0) >= 0 ? 'gain' : 'loss',
+    })
+  }
+  if (!cash) {
+    rows.push({ key: 'currency', label: t('detailCurrency'), value: cur })
+  }
+  if (!cash && h.isCash) {
+    rows.push({ key: 'cashFlag', label: t('detailCountedAsCash'), value: t('detailYes') })
+  }
+  rows.push({ key: 'added', label: t('detailAdded'), value: formatDate(h.createdAt) })
+  return [...rows, ...quoteRows()]
+})
+
 const editorOpen = ref(false)
 const deleting = ref(false)
 onMounted(() => {
@@ -178,8 +240,8 @@ function confirmDelete() {
             <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? formatCurrency(holding.quantity, holding.currency ?? 'USD') : formatQuantity(holding.quantity) }}</p>
           </div>
           <div class="text-center">
-            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? t('detailRate') : t('detailAvgCost') }}</p>
-            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? '—' : formatNumber(holding.averageCost) }}</p>
+            <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? t('detailCurrency') : t('detailAvgCost') }}</p>
+            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? (holding.currency ?? 'USD') : formatNumber(holding.averageCost) }}</p>
           </div>
           <div class="text-right">
             <p class="text-[10px] text-muted-foreground font-medium">{{ t('detailWeight') }}</p>
@@ -234,32 +296,28 @@ function confirmDelete() {
       </div>
 
       <!-- Metrics -->
-      <div v-if="holding" class="mt-4 rounded-2xl bg-card divide-y divide-border/40 overflow-hidden card-press elev-1">
-        <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-xs text-muted-foreground font-medium">{{ t('detailInvested') }}</span>
-          <span class="text-sm font-semibold tabular-nums">{{ metrics ? formatCurrency(metrics.costBasis, holding.currency ?? 'USD') : '—' }}</span>
-        </div>
-        <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-xs text-muted-foreground font-medium">{{ t('detailMarketValue') }}</span>
-          <span class="text-sm font-semibold tabular-nums">{{ metrics ? formatCurrency(metrics.marketValue, holding.currency ?? 'USD') : '—' }}</span>
-        </div>
-        <div class="flex items-center justify-between px-4 py-3 border-b border-border/30">
-          <span class="text-xs text-muted-foreground font-medium">{{ t('detailAvgCost') }}</span>
-          <span class="text-sm font-semibold tabular-nums">{{ formatNumber(holding.averageCost) }} {{ holding.currency ?? '' }}</span>
-        </div>
-        <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-xs text-muted-foreground font-medium">{{ t('detailTotalReturn') }}</span>
-          <span
-            class="text-sm font-semibold tabular-nums"
-            :class="metrics && metrics.pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
-          >
-            <template v-if="metrics && quote?.price">
-              {{ metrics.pnl >= 0 ? '+' : '' }}{{ formatCurrency(metrics.pnl, holding.currency ?? 'USD') }}
-              <span class="text-[11px] font-normal text-muted-foreground">({{ formatPercent(metrics.pnlPercent) }})</span>
-            </template>
-            <template v-else>—</template>
+      <div v-if="detailRows.length" class="mt-4 rounded-2xl bg-card divide-y divide-border/40 overflow-hidden card-press elev-1">
+        <div
+          v-for="row in detailRows"
+          :key="row.key"
+          class="flex items-center justify-between gap-3 px-4 py-2.5"
+        >
+          <span class="text-xs text-muted-foreground font-medium">{{ row.label }}</span>
+          <span class="flex items-baseline gap-1.5 text-sm font-semibold tabular-nums text-right">
+            <span
+              :class="row.tone === 'gain' ? 'text-emerald-600 dark:text-emerald-400' : row.tone === 'loss' ? 'text-rose-600 dark:text-rose-400' : 'text-foreground'"
+            >{{ row.value }}</span>
+            <span v-if="row.sub" class="text-[11px] font-normal text-muted-foreground">{{ row.sub }}</span>
           </span>
         </div>
+      </div>
+
+      <!-- Notes -->
+      <div v-if="holding?.notes" class="mt-4 rounded-2xl bg-card p-4 card-press elev-1">
+        <p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {{ t('detailNotes') }}
+        </p>
+        <p class="mt-1.5 text-sm text-foreground whitespace-pre-line">{{ holding.notes }}</p>
       </div>
 
       <!-- Actions -->

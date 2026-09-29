@@ -19,7 +19,7 @@ const preferences = ref<Preferences>({
   refreshInterval: 60,
   displayCurrency: 'USD',
   fontFamily: 'serif',
-  compactLayout: false,
+  compactLayout: true,
   locale: 'en',
 })
 const loaded = ref(false)
@@ -29,7 +29,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   refreshInterval: 60,
   displayCurrency: 'USD',
   fontFamily: 'serif',
-  compactLayout: false,
+  compactLayout: true,
   locale: 'en',
 }
 

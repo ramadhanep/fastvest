@@ -105,8 +105,8 @@ const FONT_OPTIONS = [
 ] as const
 
 const DENSITY_OPTIONS = [
-  { value: false, tkey: 'densityComfortable' },
   { value: true, tkey: 'densityCompact' },
+  { value: false, tkey: 'densityComfortable' },
 ] as const
 
 const LANGS = [
