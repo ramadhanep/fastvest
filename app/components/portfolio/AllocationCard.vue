@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Holding, Quote } from '#shared/types'
-import { calculateHoldingMetrics } from '~/utils/calculations'
+import { calculateHoldingMetrics, orderAllocationSlices } from '~/utils/calculations'
 import { brandColorFor, BRAND_FALLBACK } from '~/utils/brand-colors'
 import { formatCurrency } from '~/utils/format'
 import { useExchangeRates } from '~/composables/useExchangeRates'
@@ -33,21 +33,20 @@ const segments = computed<{ label: string; value: number; color: string }[]>(() 
     const cur = props.getQuote(h.symbol)?.currency ?? h.currency ?? 'USD'
     return { ...m, marketValue: toUsd(m.marketValue, cur) }
   })
-  return props.holdings.map((h, i) => {
-    const mv = metrics[i]?.marketValue ?? 0
-    const isCash = h.isCash || h.symbol.startsWith('CASH-')
-    const brand = isCash ? CASH_COLOR : brandColorFor(h.symbol)
-    return {
-      label: h.symbol,
-      value: mv,
-      color: brand ?? BRAND_FALLBACK,
-    }
-  }).filter((s) => s.value > 0)
+  const slices = props.holdings
+    .map((h, i) => {
+      const mv = metrics[i]?.marketValue ?? 0
+      const isCash = !!h.isCash || h.symbol.startsWith('CASH-')
+      const brand = isCash ? CASH_COLOR : brandColorFor(h.symbol)
+      return { label: h.symbol, value: mv, color: brand ?? BRAND_FALLBACK, isCash }
+    })
+    .filter((s) => s.value > 0)
+  return orderAllocationSlices(slices)
 })
 
 const totalValue = computed(() => segments.value.reduce((s, x) => s + x.value, 0))
 
-const rows = computed(() => [...segments.value].sort((a, b) => b.value - a.value))
+const rows = computed(() => segments.value)
 
 const donutRef = ref<{ resize: () => void } | null>(null)
 
@@ -169,7 +168,7 @@ watch(isOpen, (open, prev) => {
             @select="toggle"
           />
           <ul class="w-full min-w-0 flex-1 max-h-52 overflow-y-auto space-y-0.5">
-            <li v-for="s in rows" :key="s.label">
+            <li v-for="(s, i) in rows" :key="`${s.label}-${i}`">
               <button
                 type="button"
                 class="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors cursor-pointer"

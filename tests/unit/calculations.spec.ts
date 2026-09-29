@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   calculateHoldingMetrics,
   calculatePortfolioSummary,
+  orderAllocationSlices,
 } from '~/utils/calculations'
 import type { Holding, Quote } from '#shared/types'
 
@@ -93,5 +94,54 @@ describe('calculatePortfolioSummary', () => {
   it('undefined pnl percent when total cost is zero', () => {
     const s = calculatePortfolioSummary([{ ...holding, averageCost: 0 }], () => null)
     expect(s.totalPnlPercent).toBeUndefined()
+  })
+})
+
+describe('orderAllocationSlices', () => {
+  const slice = (label: string, value: number, isCash = false) => ({ label, value, isCash })
+
+  it('keeps all cash slices in one contiguous trailing block', () => {
+    const out = orderAllocationSlices([
+      slice('CASH-IDR', 100, true),
+      slice('BTC-USD', 300),
+      slice('AMZN', 200),
+      slice('CASH-USD', 400, true),
+    ])
+    expect(out.map((s) => s.label)).toEqual(['BTC-USD', 'AMZN', 'CASH-USD', 'CASH-IDR'])
+  })
+
+  it('keeps duplicate symbols adjacent instead of splitting them', () => {
+    const out = orderAllocationSlices([
+      slice('BTC-USD', 100),
+      slice('AMZN', 5000),
+      slice('BTC-USD', 200),
+      slice('CASH-IDR', 900, true),
+    ])
+    expect(out.map((s) => s.label)).toEqual(['AMZN', 'BTC-USD', 'BTC-USD', 'CASH-IDR'])
+  })
+
+  it('treats a digital asset flagged isCash as part of the cash block', () => {
+    const out = orderAllocationSlices([
+      slice('USDT-USD', 700, true),
+      slice('AAPL', 900),
+      slice('ETH-USD', 500),
+    ])
+    expect(out.map((s) => s.label)).toEqual(['AAPL', 'ETH-USD', 'USDT-USD'])
+  })
+
+  it('orders groups by combined value, stable inside a group', () => {
+    const out = orderAllocationSlices([
+      slice('SMALL', 10),
+      slice('BIG', 5),
+      slice('BIG', 500),
+      slice('MID', 100),
+    ])
+    expect(out.map((s) => s.value)).toEqual([5, 500, 100, 10])
+  })
+
+  it('does not mutate the input', () => {
+    const input = [slice('B', 1), slice('A', 2)]
+    orderAllocationSlices(input)
+    expect(input.map((s) => s.label)).toEqual(['B', 'A'])
   })
 })

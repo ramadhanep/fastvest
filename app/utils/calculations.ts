@@ -41,6 +41,41 @@ export function calculateHoldingMetrics(holding: Holding, quote: Quote | null | 
   }
 }
 
+export interface AllocationSlice {
+  label: string
+  value: number
+  isCash: boolean
+}
+
+/**
+ * Orders donut slices so no two groups interleave: all cash-like slices (including
+ * digital assets flagged isCash) stay in one contiguous block at the end, and slices
+ * sharing a symbol stay adjacent even when the portfolio lists that symbol twice.
+ * Within a block, groups are ordered by combined value desc.
+ */
+export function orderAllocationSlices<T extends AllocationSlice>(slices: readonly T[]): T[] {
+  const keyOf = (s: AllocationSlice) => `${s.isCash ? 1 : 0} ${s.label}`
+  const totals = new Map<string, number>()
+  for (const s of slices) {
+    const k = keyOf(s)
+    totals.set(k, (totals.get(k) ?? 0) + s.value)
+  }
+  return slices
+    .map((slice, index) => ({ slice, index }))
+    .sort((a, b) => {
+      const ka = keyOf(a.slice)
+      const kb = keyOf(b.slice)
+      if (ka !== kb) {
+        const cashA = a.slice.isCash ? 1 : 0
+        const cashB = b.slice.isCash ? 1 : 0
+        if (cashA !== cashB) return cashA - cashB
+        return (totals.get(kb) ?? 0) - (totals.get(ka) ?? 0)
+      }
+      return a.index - b.index
+    })
+    .map((x) => x.slice)
+}
+
 export function calculatePortfolioSummary(
   holdings: readonly Holding[],
   quotesBySymbol: (symbol: string) => Quote | null | undefined,
