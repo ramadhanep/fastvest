@@ -267,6 +267,12 @@ BTC     16.3%
 
 A compact donut chart is acceptable.
 
+Slice order is part of the spec, not an afterthought. Cash positions
+(including digital assets explicitly counted as cash) must form one
+contiguous block, and slices for a repeated symbol must stay adjacent to
+each other. No other asset may sit between them. The legend list uses the
+same order as the ring.
+
 ### Holdings
 
 Each holding row should show:

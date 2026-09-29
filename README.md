@@ -48,8 +48,9 @@ Most portfolio trackers want an account before they show you a number. Fastvest 
 
 - Total value, cost basis, unrealized P&L, and today's P&L in one summary card
 - Performance chart reconstructed from when you added each holding
-- Allocation donut, tappable to filter holdings by position or currency
+- Allocation donut, tappable to filter holdings by position or currency. Slices are ordered so cash stays in one block and repeated symbols stay adjacent — the legend always matches the ring
 - Holdings table — price, market value, average cost, P&L, daily change; sortable on desktop, swipe-revealed actions on mobile
+- Holding detail page — price history over 7 ranges, plus invested, market value, day change, total return, weight, currency, and add date
 - Cash positions alongside equities, so a savings account is a first-class holding
 - Multi-currency: USD, IDR, MYR — FX-normalized totals with per-currency breakdown
 
@@ -69,6 +70,7 @@ Most portfolio trackers want an account before they show you a number. Fastvest 
 **App**
 
 - System / light / dark themes
+- Serif or sans-serif typeface, and compact (default) or comfortable spacing
 - Manual and automatic refresh (60s default, smart about hidden and offline tabs)
 - Stale-while-refresh quotes — the dashboard never blocks on the network
 - English and Bahasa Indonesia
