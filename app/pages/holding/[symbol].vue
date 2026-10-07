@@ -119,9 +119,7 @@ const accentStyle = computed(() => {
   const hex = accent.value
   if (!hex) return {}
   return {
-    backgroundColor: `${hex}30`,
-    borderColor: `${hex}40`,
-    border: `1px solid ${hex}40`,
+    backgroundColor: `${hex}20`,
   }
 })
 

@@ -120,7 +120,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
     </div>
 
     <!-- Metrics: Invested · Rate · Return · Today -->
-    <div class="mt-4 grid grid-cols-3 gap-0 rounded-xl bg-muted/30 overflow-hidden divide-x divide-border/30" :class="{ 'grid-cols-4': displayCurrency !== 'USD' }">
+    <div class="mt-4 grid grid-cols-4 gap-0 rounded-xl bg-muted/30 overflow-hidden sm:divide-x divide-border/30" :class="{ 'sm:grid-cols-4': displayCurrency !== 'USD' }">
       <div class="px-3 py-2.5 text-center">
         <p class="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{{ t('summaryInvested') }}</p>
         <p class="mt-0.5 text-xs font-semibold tabular-nums text-foreground truncate">

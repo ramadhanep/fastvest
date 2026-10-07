@@ -254,4 +254,16 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  :where(.border, .border-t, .border-b, .border-l, .border-r, .border-x, .border-y) {
+    border-color: transparent !important;
+  }
+
+  :where(.divide-x > :not(:last-child), .divide-y > :not(:last-child)) {
+    border-color: transparent !important;
+  }
+
+  :where(.ring-1) {
+    --tw-ring-color: transparent !important;
+  }
 }

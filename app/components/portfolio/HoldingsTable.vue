@@ -282,7 +282,7 @@ function onRowClick(h: Holding) {
                       : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
                   "
                 >
-                  {{ (row.quote.changePercent ?? 0) >= 0 ? '+' : '' }}{{ formatPercent(row.quote.changePercent ?? 0) }}
+                  {{ formatPercent(row.quote.changePercent ?? 0) }}
                 </span>
               </div>
 
