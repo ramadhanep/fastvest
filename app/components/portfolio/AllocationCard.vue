@@ -12,8 +12,9 @@ const props = withDefaults(
     getQuote: (symbol: string) => Quote | null
     selectedSymbol?: string | null
     selectedCurrency?: string | null
+    showBalance?: boolean
   }>(),
-  { selectedSymbol: null, selectedCurrency: null },
+  { selectedSymbol: null, selectedCurrency: null, showBalance: true },
 )
 
 const emit = defineEmits<{
@@ -28,20 +29,21 @@ const { t } = useI18n()
 const displayCurrency = computed(() => preferences.value.displayCurrency ?? 'USD')
 
 const segments = computed<{ label: string; value: number; color: string }[]>(() => {
+  const bySymbol = new Map<string, { label: string; value: number; color: string; isCash: boolean }>()
   const metrics = props.holdings.map((h) => {
     const m = calculateHoldingMetrics(h, props.getQuote(h.symbol))
     const cur = props.getQuote(h.symbol)?.currency ?? h.currency ?? 'USD'
     return { ...m, marketValue: toUsd(m.marketValue, cur) }
   })
-  const slices = props.holdings
-    .map((h, i) => {
-      const mv = metrics[i]?.marketValue ?? 0
-      const isCash = !!h.isCash || h.symbol.startsWith('CASH-')
-      const brand = isCash ? CASH_COLOR : brandColorFor(h.symbol)
-      return { label: h.symbol, value: mv, color: brand ?? BRAND_FALLBACK, isCash }
-    })
-    .filter((s) => s.value > 0)
-  return orderAllocationSlices(slices)
+  props.holdings.forEach((h, i) => {
+    const value = metrics[i]?.marketValue ?? 0
+    if (value <= 0) return
+    const isCash = !!h.isCash || h.symbol.startsWith('CASH-')
+    const existing = bySymbol.get(h.symbol)
+    if (existing) existing.value += value
+    else bySymbol.set(h.symbol, { label: h.symbol, value, color: (isCash ? CASH_COLOR : brandColorFor(h.symbol)) ?? BRAND_FALLBACK, isCash })
+  })
+  return orderAllocationSlices([...bySymbol.values()])
 })
 
 const totalValue = computed(() => segments.value.reduce((s, x) => s + x.value, 0))
@@ -181,7 +183,7 @@ watch(isOpen, (open, prev) => {
                   <span class="text-xs font-medium text-foreground truncate">{{ s.label }}</span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 tabular-nums">
-                  <span class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(s.value, displayCurrency), displayCurrency) }}</span>
+                  <span v-if="showBalance" class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(s.value, displayCurrency), displayCurrency) }}</span>
                   <span class="w-12 text-right text-xs font-semibold text-foreground">{{ totalValue ? ((s.value / totalValue) * 100).toFixed(1) : '0.0' }}%</span>
                 </span>
               </button>
@@ -204,7 +206,7 @@ watch(isOpen, (open, prev) => {
                   <span class="text-xs font-medium text-foreground">{{ t('allocationInvestments') }}</span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 tabular-nums">
-                  <span class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(cashSplit.invested, displayCurrency), displayCurrency) }}</span>
+                  <span v-if="showBalance" class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(cashSplit.invested, displayCurrency), displayCurrency) }}</span>
                   <span class="w-12 text-right text-xs font-semibold text-foreground">{{ investedPct.toFixed(1) }}%</span>
                 </span>
               </div>
@@ -214,7 +216,7 @@ watch(isOpen, (open, prev) => {
                   <span class="text-xs font-medium text-foreground">{{ t('allocationCash') }}</span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 tabular-nums">
-                  <span class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(cashSplit.cash, displayCurrency), displayCurrency) }}</span>
+                  <span v-if="showBalance" class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(cashSplit.cash, displayCurrency), displayCurrency) }}</span>
                   <span class="w-12 text-right text-xs font-semibold text-foreground">{{ cashPct.toFixed(1) }}%</span>
                 </span>
               </div>
@@ -253,7 +255,7 @@ watch(isOpen, (open, prev) => {
                   <span class="text-xs font-medium text-foreground">{{ c.label }}</span>
                 </span>
                 <span class="flex shrink-0 items-center gap-2 tabular-nums">
-                  <span class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(c.value, c.label), c.label) }}</span>
+                  <span v-if="showBalance" class="text-xs text-muted-foreground">{{ formatCurrency(fromUsd(c.value, c.label), c.label) }}</span>
                   <span class="w-12 text-right text-xs font-semibold text-foreground">{{ totalValue ? ((c.value / totalValue) * 100).toFixed(1) : '0.0' }}%</span>
                 </span>
               </button>

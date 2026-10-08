@@ -25,7 +25,7 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
     averageCost: 185.5,
     currency: 'USD',
     notes: 'Core tech position · Apple Inc.',
-    createdAt: '2026-01-15T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
     id: 'demo-nvda',
@@ -34,7 +34,7 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
     averageCost: 118.2,
     currency: 'USD',
     notes: 'AI computing infrastructure · NVIDIA',
-    createdAt: '2026-02-01T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
     id: 'demo-spy',
@@ -43,7 +43,7 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
     averageCost: 512.0,
     currency: 'USD',
     notes: 'S&P 500 Index ETF',
-    createdAt: '2026-02-10T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
     id: 'demo-btc',
@@ -52,7 +52,7 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
     averageCost: 63500.0,
     currency: 'USD',
     notes: 'Digital asset reserve · Bitcoin',
-    createdAt: '2026-02-15T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
     id: 'demo-bbca',
@@ -61,7 +61,7 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
     averageCost: 9850,
     currency: 'IDR',
     notes: 'Bank Central Asia · IDX equity',
-    createdAt: '2026-02-20T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
   },
   {
     id: 'demo-cash-bca',
@@ -72,7 +72,7 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
     currency: 'IDR',
     notes: 'Cash reserve',
     isCash: true,
-    createdAt: '2026-03-01T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
   },
 ]
 

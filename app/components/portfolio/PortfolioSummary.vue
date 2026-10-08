@@ -6,13 +6,16 @@ import { usePreferences } from '~/composables/usePreferences'
 import type { PortfolioSummary } from '#shared/types'
 import { formatCurrency, formatPercent } from '~/utils/format'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   summary: PortfolioSummary
   hasQuotes: boolean
   quoteErrors: number
-}>()
+  showBalance?: boolean
+}>(), { showBalance: true })
 
-const showBalance = ref(true)
+const emit = defineEmits<{
+  (e: 'update:showBalance', value: boolean): void
+}>()
 
 const { preferences, setDisplayCurrency } = usePreferences()
 const { t } = useI18n()
@@ -101,7 +104,7 @@ const isDayGain = computed(() => props.summary.totalDayChange >= 0)
           type="button"
           class="size-7 rounded-full inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ios-press cursor-pointer"
           :aria-label="t('summaryToggleAria')"
-          @click="showBalance = !showBalance"
+          @click="emit('update:showBalance', !showBalance)"
         >
           <EyeOff v-if="showBalance" class="size-3.5" />
           <Eye v-else class="size-3.5" />

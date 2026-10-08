@@ -32,6 +32,7 @@ const editingHolding = ref<Holding | null>(null)
 const deletingHolding = ref<Holding | null>(null)
 const filteringSymbol = ref<string | null>(null)
 const filteringCurrency = ref<string | null>(null)
+const showBalance = ref(true)
 
 // Watch addModal trigger
 watch(addModal.isOpen, (open) => {
@@ -172,6 +173,7 @@ onMounted(() => {
 
         <!-- Portfolio Summary Card -->
         <PortfolioSummary
+          v-model:show-balance="showBalance"
           :summary="summary"
           :has-quotes="hasQuotes"
           :quote-errors="quoteErrors"
@@ -204,6 +206,7 @@ onMounted(() => {
           :get-quote="getQuote"
           :selected-symbol="filteringSymbol"
           :selected-currency="filteringCurrency"
+          :show-balance="showBalance"
           @select="(s: string | null) => (filteringSymbol = s)"
           @select-currency="(c: string | null) => (filteringCurrency = c)"
         />
