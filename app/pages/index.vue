@@ -211,6 +211,9 @@ onMounted(() => {
           @select-currency="(c: string | null) => (filteringCurrency = c)"
         />
 
+        <!-- Risk Profile Card -->
+        <RiskProfileAccordion :holdings="holdings" :get-quote="getQuote" />
+
         <!-- Holdings List -->
         <HoldingsTable
           :holdings="holdings"

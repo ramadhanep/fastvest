@@ -47,6 +47,52 @@ export interface AllocationSlice {
   isCash: boolean
 }
 
+export type RiskLevel = 'conservative' | 'moderatelyConservative' | 'moderate' | 'aggressive' | 'veryAggressive'
+
+export interface PortfolioRiskProfile {
+  score: number
+  level: RiskLevel
+  equityPct: number
+  cryptoPct: number
+  cashPct: number
+  largestHoldingPct: number
+}
+
+function riskWeight(symbol: string, isCash: boolean) {
+  if (isCash) return 0
+  if (/-(USD|USDT|USDC)$/.test(symbol) || /^(BTC|ETH|SOL|XRP|ADA|DOGE)/.test(symbol)) return 90
+  if (/^(SPY|VOO|IVV|VTI|VT|BND|AGG|IEF|TLT|LQD)/.test(symbol)) return 45
+  return 65
+}
+
+export function calculatePortfolioRiskProfile(
+  holdings: readonly Holding[],
+  getQuote: (symbol: string) => Quote | null | undefined,
+  toUsd: (value: number, currency: string) => number = (value) => value,
+): PortfolioRiskProfile {
+  const positions = holdings.map((holding) => {
+    const quote = getQuote(holding.symbol)
+    const currency = quote?.currency ?? holding.currency ?? 'USD'
+    const value = Math.max(0, toUsd(calculateHoldingMetrics(holding, quote).marketValue, currency))
+    const isCash = !!holding.isCash || holding.symbol.startsWith('CASH-')
+    return { value, isCash, symbol: holding.symbol, weight: riskWeight(holding.symbol, isCash) }
+  }).filter((position) => position.value > 0)
+  const total = positions.reduce((sum, position) => sum + position.value, 0)
+  if (!total) return { score: 0, level: 'conservative', equityPct: 0, cryptoPct: 0, cashPct: 0, largestHoldingPct: 0 }
+
+  const pct = (value: number) => (value / total) * 100
+  const cashPct = pct(positions.filter((p) => p.isCash).reduce((sum, p) => sum + p.value, 0))
+  const cryptoPct = pct(positions.filter((p) => !p.isCash && riskWeight(p.symbol, false) === 90).reduce((sum, p) => sum + p.value, 0))
+  const equityPct = 100 - cashPct
+  const largestHoldingPct = Math.max(...positions.map((p) => pct(p.value)))
+  const weightedRisk = positions.reduce((sum, p) => sum + p.value * p.weight, 0) / total
+  const concentrationPenalty = largestHoldingPct > 60 ? 20 : largestHoldingPct > 40 ? 10 : 0
+  const cashAdjustment = cashPct > 20 ? 10 : 0
+  const score = Math.round(Math.min(100, Math.max(0, weightedRisk + concentrationPenalty - cashAdjustment)))
+  const level: RiskLevel = score < 25 ? 'conservative' : score < 50 ? 'moderatelyConservative' : score < 70 ? 'moderate' : score < 85 ? 'aggressive' : 'veryAggressive'
+  return { score, level, equityPct, cryptoPct, cashPct, largestHoldingPct }
+}
+
 /**
  * Orders donut slices so no two groups interleave: all cash-like slices (including
  * digital assets flagged isCash) stay in one contiguous block at the end, and slices

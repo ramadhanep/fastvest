@@ -3,6 +3,7 @@ import {
   calculateHoldingMetrics,
   calculatePortfolioSummary,
   orderAllocationSlices,
+  calculatePortfolioRiskProfile,
 } from '~/utils/calculations'
 import type { Holding, Quote } from '#shared/types'
 
@@ -94,6 +95,30 @@ describe('calculatePortfolioSummary', () => {
   it('undefined pnl percent when total cost is zero', () => {
     const s = calculatePortfolioSummary([{ ...holding, averageCost: 0 }], () => null)
     expect(s.totalPnlPercent).toBeUndefined()
+  })
+})
+
+describe('calculatePortfolioRiskProfile', () => {
+  it('weights crypto and concentration risk, then offsets cash', () => {
+    const holdings = [
+      { ...holding, symbol: 'AAPL', quantity: 6 },
+      { ...holding, id: 'btc', symbol: 'BTC-USD', quantity: 1 },
+      { ...holding, id: 'cash', symbol: 'CASH-USD', quantity: 500, isCash: true },
+    ]
+    const quotes: Record<string, Quote> = {
+      AAPL: { symbol: 'AAPL', price: 100, currency: 'USD' },
+      'BTC-USD': { symbol: 'BTC-USD', price: 100, currency: 'USD' },
+      'CASH-USD': { symbol: 'CASH-USD', price: 1, currency: 'USD' },
+    }
+    const profile = calculatePortfolioRiskProfile(holdings, (symbol) => quotes[symbol] ?? null)
+    expect(profile.score).toBe(40)
+    expect(profile.level).toBe('moderatelyConservative')
+    expect(profile.cryptoPct).toBeCloseTo(6.25)
+    expect(profile.cashPct).toBeCloseTo(31.25)
+  })
+
+  it('returns conservative for an empty portfolio', () => {
+    expect(calculatePortfolioRiskProfile([], () => null).level).toBe('conservative')
   })
 })
 
