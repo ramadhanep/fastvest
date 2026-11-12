@@ -13,7 +13,10 @@ const MAGIC = 'FV1B1-'
 const SALT_BYTES = 16
 const IV_BYTES = 12
 const PBKDF2_ITERATIONS = 250_000
-export const MIN_PASSPHRASE = 4
+// The code is meant to be pasted into chat apps, so anyone holding it can guess
+// offline. 4 chars fell in minutes on a GPU even at 250k PBKDF2 rounds; 8 is the floor.
+// Only enforced when creating — older codes with shorter passphrases still decode.
+export const MIN_PASSPHRASE = 8
 
 function asArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer

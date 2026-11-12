@@ -15,6 +15,7 @@ const props = withDefaults(
     currency?: string
     brandColor?: string
     height?: number
+    masked?: boolean
   }>(),
   {
     currency: 'USD',
@@ -24,6 +25,7 @@ const props = withDefaults(
 )
 
 const colorMode = useColorMode()
+const { locale } = useI18n()
 const isDark = computed(() => colorMode.value === 'dark')
 
 const axisColor = computed(() => (isDark.value ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)'))
@@ -101,9 +103,9 @@ const option = computed(() => ({
       const p = params[0]
       if (!p) return ''
       const d = p.value[0] as Date
-      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      const dateStr = d.toLocaleDateString(locale.value, { month: 'short', day: 'numeric', year: 'numeric' })
       const close = p.value[1] as number
-      return `<div style="font-size:11px;opacity:.7;margin-bottom:2px">${dateStr}</div><strong>${formatCurrency(close, props.currency)}</strong>`
+      return `<div style="font-size:11px;opacity:.7;margin-bottom:2px">${dateStr}</div><strong>${props.masked ? '••••' : formatCurrency(close, props.currency)}</strong>`
     },
   },
   xAxis: {
@@ -119,7 +121,7 @@ const option = computed(() => ({
     position: 'right' as const,
     axisLine: { show: false },
     axisTick: { show: false },
-    axisLabel: { color: labelColor.value, fontSize: 10, formatter: (v: number) => formatNumber(v) },
+    axisLabel: { show: !props.masked, color: labelColor.value, fontSize: 10, formatter: (v: number) => formatNumber(v) },
     splitLine: { lineStyle: { color: gridColor.value, type: 'dashed' as const } },
   },
   dataZoom: [

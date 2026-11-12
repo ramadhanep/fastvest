@@ -7,19 +7,29 @@ const yf = new yahooFinance({ suppressNotices: ['yahooSurvey'] as never })
 
 const TIMEOUT_MS = 8_000
 
+// yahoo-finance2 takes no AbortSignal, so race it: a hung upstream call must not
+// hold the request open past TIMEOUT_MS.
 async function withTimeout<T>(fn: () => Promise<T>): Promise<T> {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  const timer = new Promise<never>((_, reject) => {
+    timeout = setTimeout(
+      () => reject(new MarketDataError('MARKET_DATA_TIMEOUT', 'Market data request timed out.')),
+      TIMEOUT_MS,
+    )
+  })
   try {
-    return await fn()
-  } catch (err) {
-    if (controller.signal.aborted) {
-      throw new MarketDataError('MARKET_DATA_TIMEOUT', 'Market data request timed out.')
-    }
-    throw err
+    return await Promise.race([fn(), timer])
   } finally {
     clearTimeout(timeout)
   }
+}
+
+// yahoo-finance2 already returns a Date; raw Yahoo JSON uses epoch seconds.
+// Multiplying a Date by 1000 produced year-58,000 timestamps.
+export function toIsoTime(value: unknown): string | undefined {
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.toISOString() : undefined
+  if (typeof value === 'number' && Number.isFinite(value)) return new Date(value * 1000).toISOString()
+  return undefined
 }
 
 function normalizeQuote(raw: Record<string, unknown>): Quote {
@@ -41,9 +51,7 @@ function normalizeQuote(raw: Record<string, unknown>): Quote {
     changePercent,
     currency: (raw.currency as string) ?? undefined,
     marketState: (raw.marketState as string) ?? undefined,
-    marketTime: raw.regularMarketTime
-      ? new Date(Number(raw.regularMarketTime) * 1000).toISOString()
-      : undefined,
+    marketTime: toIsoTime(raw.regularMarketTime),
   }
 }
 

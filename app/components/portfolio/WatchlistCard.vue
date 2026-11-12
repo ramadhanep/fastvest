@@ -25,7 +25,7 @@ function goto(symbol: string) {
   <section v-if="items.length" class="mt-4" aria-labelledby="watchlist-heading">
     <h2 id="watchlist-heading" class="text-sm font-semibold tracking-tight">{{ t('watchlistTitle') }}</h2>
 
-    <div class="mt-3 -mx-4 sm:mx-0 rounded-none sm:rounded-2xl bg-card divide-y divide-border/30 overflow-hidden">
+    <div class="mt-3 -mx-4 bg-card divide-y divide-border/30 overflow-hidden">
       <div
         v-for="w in items"
         :key="w.symbol"
@@ -51,7 +51,7 @@ function goto(symbol: string) {
             class="text-[11px] font-medium tabular-nums mt-0.5"
             :class="(quotes.getQuote(w.symbol)?.changePercent ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
           >
-            {{ (quotes.getQuote(w.symbol)?.changePercent ?? 0) >= 0 ? '+' : '' }}{{ formatPercent(quotes.getQuote(w.symbol)?.changePercent) }}
+            {{ formatPercent(quotes.getQuote(w.symbol)?.changePercent) }}
           </p>
         </div>
 

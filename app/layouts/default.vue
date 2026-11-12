@@ -31,11 +31,13 @@
     </div>
 
     <main
-      ref="mainEl"
-      class="mx-auto w-full max-w-md sm:max-w-xl lg:max-w-3xl px-0 sm:px-4 pb-28 pt-2 flex-1"
+      class="mx-auto w-full max-w-md pb-28 pt-2 flex-1"
+      :class="{ 'edge-swipe-settle': !edgeDragging && edgeX === 0 }"
+      :style="edgeX ? { transform: `translateX(${edgeX}px)` } : undefined"
       @touchstart.passive="onTouchStart"
       @touchmove.passive="onTouchMove"
       @touchend="onTouchEnd"
+      @touchcancel="onTouchCancel"
     >
       <slot />
     </main>
@@ -49,7 +51,7 @@
         style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem))"
       >
         <div
-          class="w-full max-w-md sm:max-w-xl lg:max-w-3xl pointer-events-auto fab-slide"
+          class="w-full max-w-md pointer-events-auto fab-slide"
           :class="{ 'fab-slide--hidden': !fabVisible }"
         >
           <!-- Liquid glass container -->
@@ -94,12 +96,13 @@ const { holdings } = usePortfolio()
 const addModal = useAddHoldingModal()
 const watchlistModal = useAddWatchlistModal()
 const route = useRoute()
+const router = useRouter()
 const isHome = computed(() => route.path === '/')
 const isDetail = computed(() => route.path.startsWith('/holding/'))
 
 // ─── Shared random portfolio color ───────────────────────────────────────────
-// Picked once when holdings load/change, stable for the session so both
-// AppHeader and FAB always show the same tint simultaneously.
+// Picked once per session, so AppHeader and FAB share one tint. Re-picked only
+// when the current pick no longer belongs to any holding (e.g. it was deleted).
 const randomPortfolioColor = ref<string | null>(null)
 
 watch(
@@ -108,6 +111,7 @@ watch(
     const colors = newHoldings
       .map((h) => brandColorFor(h.symbol))
       .filter(Boolean) as string[]
+    if (randomPortfolioColor.value && colors.includes(randomPortfolioColor.value)) return
     randomPortfolioColor.value = colors.length
       ? (colors[Math.floor(Math.random() * colors.length)] ?? null)
       : null
@@ -132,7 +136,6 @@ const headerBrandColor = computed<string | null>(() => {
   return null
 })
 
-const mainEl = ref<HTMLElement | null>(null)
 const pullY = ref(0)
 const pulling = ref(false)
 let startY = 0
@@ -197,12 +200,58 @@ onUnmounted(() => {
   window.removeEventListener('scroll', onWindowScroll)
 })
 
+// ─── Edge swipe back ─────────────────────────────────────────────────────────
+// iOS home-screen apps (standalone) lose Safari's edge-swipe back gesture, so we
+// recreate it on sub-pages. Browser Safari and Android already have a system
+// back gesture, which this would fight with — hence `navigator.standalone`.
+
+const EDGE_ZONE = 24 // px from the left edge where a swipe may start
+const BACK_AFTER = 90 // px of drag that commits the navigation
+
+const edgeX = ref(0)
+const edgeDragging = ref(false)
+let edgeStartX = 0
+let edgeStartY = 0
+
+function edgeSwipeEnabled() {
+  return !isHome.value && (navigator as Navigator & { standalone?: boolean }).standalone === true
+}
+
+function onEdgeStart(t: Touch): boolean {
+  if (!edgeSwipeEnabled() || t.clientX > EDGE_ZONE) return false
+  edgeStartX = t.clientX
+  edgeStartY = t.clientY
+  edgeDragging.value = true
+  return true
+}
+
+function onEdgeMove(t: Touch) {
+  const dx = t.clientX - edgeStartX
+  // Vertical intent before we committed horizontally: hand the gesture back to scroll.
+  if (edgeX.value === 0 && Math.abs(t.clientY - edgeStartY) > Math.abs(dx)) {
+    edgeDragging.value = false
+    return
+  }
+  edgeX.value = Math.max(0, dx)
+}
+
+function onEdgeEnd() {
+  edgeDragging.value = false
+  const commit = edgeX.value >= BACK_AFTER
+  edgeX.value = 0
+  if (!commit) return
+  if (window.history.state?.back) router.back()
+  else void router.push('/')
+}
+
 // ─── Pull to refresh ─────────────────────────────────────────────────────────
 
 function onTouchStart(e: TouchEvent) {
+  const edgeTouch = e.touches[0]
+  if (edgeTouch && onEdgeStart(edgeTouch)) return
   if (refreshing.value) return
-  const el = mainEl.value
-  if (!el || el.scrollTop > 0) return
+  // The window scrolls, not <main> — only start a pull at the very top.
+  if (window.scrollY > 0) return
   const t = e.touches[0]
   if (!t) return
   startY = t.clientY
@@ -210,9 +259,13 @@ function onTouchStart(e: TouchEvent) {
 }
 
 function onTouchMove(e: TouchEvent) {
+  if (edgeDragging.value) {
+    const t = e.touches[0]
+    if (t) onEdgeMove(t)
+    return
+  }
   if (!pulling.value) return
-  const el = mainEl.value
-  if (el && el.scrollTop > 0) { pullY.value = 0; return }
+  if (window.scrollY > 0) { pullY.value = 0; return }
   const t = e.touches[0]
   if (!t) return
   const dy = t.clientY - startY
@@ -223,7 +276,19 @@ function onTouchMove(e: TouchEvent) {
   }
 }
 
+// The system took the gesture (call, notification, scroll) — reset, never act.
+function onTouchCancel() {
+  edgeDragging.value = false
+  edgeX.value = 0
+  pulling.value = false
+  pullY.value = 0
+}
+
 function onTouchEnd() {
+  if (edgeDragging.value) {
+    onEdgeEnd()
+    return
+  }
   if (!pulling.value) return
   pulling.value = false
   if (pullReady.value) {
@@ -251,6 +316,11 @@ function onTouchEnd() {
      fully disappears below the viewport edge */
   transform: translateY(calc(100% + max(2rem, env(safe-area-inset-bottom, 2rem))));
   pointer-events: none;
+}
+
+/* ── Edge swipe back: spring back when released short ── */
+.edge-swipe-settle {
+  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ── FAB label ───────────────────────────────────────── */

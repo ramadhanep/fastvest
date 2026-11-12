@@ -57,5 +57,6 @@ describe('formatTimeAgo', () => {
     expect(formatTimeAgo('2026-09-06T09:30:00Z', now)).toBe('30m ago')
     expect(formatTimeAgo('2026-09-06T09:59:00Z', now)).toBe('1m ago')
     expect(formatTimeAgo('2026-09-05T08:00:00Z', now)).toBe('1d ago')
+    expect(formatTimeAgo('2026-09-06T09:30:00Z', now, 'id')).toBe('30 mnt lalu')
   })
 })

@@ -4,6 +4,9 @@ import {
   calculatePortfolioSummary,
   orderAllocationSlices,
   calculatePortfolioRiskProfile,
+  mergePosition,
+  mergeDuplicateHoldings,
+  remainingAfterSell,
 } from '~/utils/calculations'
 import type { Holding, Quote } from '#shared/types'
 
@@ -58,12 +61,13 @@ describe('calculateHoldingMetrics', () => {
     const q: Quote = { symbol: 'AAPL', price: 150, previousClose: 140 }
     const m = calculateHoldingMetrics(holding, q)
     expect(m.dayChange).toBe(100)
+    expect(m.dayChangePercent).toBeCloseTo(7.142, 2) // (150-140)/140
   })
 
   it('computes day change percent from previous close', () => {
     const m = calculateHoldingMetrics(holding, quote)
     expect(m.dayChange).toBe(50)
-    expect(m.dayChangePercent).toBeCloseTo(34.4827, 2)
+    expect(m.dayChangePercent).toBeCloseTo(3.448, 3) // per-share move, not × quantity
   })
 })
 
@@ -92,6 +96,19 @@ describe('calculatePortfolioSummary', () => {
     expect(s.holdingsCount).toBe(0)
   })
 
+  it('does not count an unpriced holding as a 100% loss', () => {
+    const holdings = [holding, { ...holding, id: '2', symbol: 'NEW' }]
+    const s = calculatePortfolioSummary(holdings, (sym) => (sym === 'AAPL' ? quote : null))
+    expect(s.totalPnl).toBe(500)
+    expect(s.totalPnlPercent).toBe(50)
+  })
+
+  it('measures today against yesterday\'s value', () => {
+    // AAPL: 10 × 150 now, +5 per share today → yesterday 1450
+    const s = calculatePortfolioSummary([holding], () => quote)
+    expect(s.totalDayChangePercent).toBeCloseTo((50 / 1450) * 100, 6)
+  })
+
   it('undefined pnl percent when total cost is zero', () => {
     const s = calculatePortfolioSummary([{ ...holding, averageCost: 0 }], () => null)
     expect(s.totalPnlPercent).toBeUndefined()
@@ -113,8 +130,8 @@ describe('calculatePortfolioRiskProfile', () => {
     const profile = calculatePortfolioRiskProfile(holdings, (symbol) => quotes[symbol] ?? null)
     expect(profile.score).toBe(40)
     expect(profile.level).toBe('moderatelyConservative')
-    expect(profile.cryptoPct).toBeCloseTo(6.25)
-    expect(profile.cashPct).toBeCloseTo(31.25)
+    expect(profile.cryptoPct).toBeCloseTo(100 / 12) // 100 of 1200
+    expect(profile.cashPct).toBeCloseTo(500 / 12) // 500 of 1200
   })
 
   it('returns conservative for an empty portfolio', () => {
@@ -168,5 +185,31 @@ describe('orderAllocationSlices', () => {
     const input = [slice('B', 1), slice('A', 2)]
     orderAllocationSlices(input)
     expect(input.map((s) => s.label)).toEqual(['B', 'A'])
+  })
+})
+describe('mergePosition', () => {
+  it('adds quantity and weights the average cost', () => {
+    // 10 @ 100 + 30 @ 200 → 40 @ 175
+    expect(mergePosition({ quantity: 10, averageCost: 100 }, { quantity: 30, averageCost: 200 })).toEqual({ quantity: 40, averageCost: 175 })
+  })
+})
+
+describe('mergeDuplicateHoldings', () => {
+  it('collapses same-symbol rows into one weighted position', () => {
+    const out = mergeDuplicateHoldings([
+      { ...holding, id: 'a', quantity: 10, averageCost: 100, createdAt: '2026-03-01T00:00:00.000Z' },
+      { ...holding, id: 'x', symbol: 'MSFT', quantity: 1, averageCost: 400 },
+      { ...holding, id: 'b', quantity: 30, averageCost: 200, createdAt: '2026-01-01T00:00:00.000Z', notes: 'later' },
+    ])
+    expect(out.map((h) => h.symbol)).toEqual(['AAPL', 'MSFT'])
+    expect(out[0]).toMatchObject({ id: 'a', quantity: 40, averageCost: 175, createdAt: '2026-01-01T00:00:00.000Z', notes: 'later' })
+  })
+})
+
+describe('remainingAfterSell', () => {
+  it('subtracts without float drift and closes at zero', () => {
+    expect(remainingAfterSell(0.3, 0.1)).toBe(0.2)
+    expect(remainingAfterSell(10, 10)).toBe(0)
+    expect(remainingAfterSell(10, 12)).toBe(0)
   })
 })

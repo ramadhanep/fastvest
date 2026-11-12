@@ -5,6 +5,7 @@ import { BackupError, decodeBackup, encodeBackup, isBackupCode } from '~/lib/bac
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import { useWatchlist } from './useWatchlist'
+import { mergeDuplicateHoldings, mergePosition, remainingAfterSell } from '~/utils/calculations'
 
 export type ImportErrorCode = 'encrypted' | 'format' | 'read' | 'weakPass' | 'wrongPass' | 'corrupt'
 
@@ -76,6 +77,19 @@ export const DEFAULT_DEMO_HOLDINGS: Holding[] = [
   },
 ]
 
+// Older files may lack createdAt. The id is only usable when it is itself a date;
+// a UUID there became "Invalid Date", which Intl.DateTimeFormat throws on.
+function createdAtOf(h: { id: string; createdAt?: string }): string {
+  if (h.createdAt) return h.createdAt
+  return Number.isFinite(Date.parse(h.id)) ? new Date(h.id).toISOString() : new Date().toISOString()
+}
+
+// randomUUID only exists in secure contexts; a phone hitting the dev server over
+// plain http on the LAN doesn't have it.
+function newId(): string {
+  return crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+}
+
 const DEMO_CLEARED_KEY = 'fastvest:demo_cleared'
 const DEMO_DISMISSED_KEY = 'fastvest:demo_dismissed'
 
@@ -102,10 +116,10 @@ export function usePortfolio() {
     if (raw && raw.holdings) {
       const parsed = z.array(holdingSchema).safeParse(raw.holdings)
       if (parsed.success) {
-        holdings.value = parsed.data.map((h) => ({
+        holdings.value = mergeDuplicateHoldings(parsed.data.map((h) => ({
           ...h,
-          createdAt: h.createdAt ?? h.id,
-        }))
+          createdAt: createdAtOf(h),
+        })))
         const isDemoIds = holdings.value.length === DEFAULT_DEMO_HOLDINGS.length &&
           holdings.value.every((h) => h.id.startsWith('demo-'))
         isDemoPortfolio.value = isDemoIds
@@ -128,9 +142,26 @@ export function usePortfolio() {
   }
 
   function addHolding(input: Omit<Holding, 'id' | 'createdAt'>): Holding {
+    // A second buy of a held symbol tops up that position instead of creating a
+    // duplicate row the detail page can't show.
+    const existing = holdings.value.find((h) => h.symbol === input.symbol)
+    if (existing) {
+      const merged: Holding = {
+        ...existing,
+        // A real purchase on top of a demo row makes it the user's own — drop the
+        // demo- id so the demo detector and "clear demo" leave it alone.
+        id: existing.id.startsWith('demo-') ? newId() : existing.id,
+        ...mergePosition(existing, input),
+        notes: existing.notes ?? input.notes,
+      }
+      holdings.value = holdings.value.map((h) => (h.id === existing.id ? merged : h))
+      isDemoPortfolio.value = false
+      persist()
+      return merged
+    }
     const holding = {
       ...input,
-      id: crypto.randomUUID(),
+      id: newId(),
       createdAt: new Date().toISOString(),
     }
     holdings.value = [holding, ...holdings.value]
@@ -142,6 +173,16 @@ export function usePortfolio() {
   function updateHolding(id: string, patch: Partial<Holding>) {
     holdings.value = holdings.value.map((h) => (h.id === id ? { ...h, ...patch, id } : h))
     persist()
+  }
+
+  /** Sell part of a position; average cost is unchanged. Returns units left (0 = closed). */
+  function sellHolding(id: string, quantity: number): number {
+    const h = holdings.value.find((x) => x.id === id)
+    if (!h) return 0
+    const left = remainingAfterSell(h.quantity, quantity)
+    if (left === 0) removeHolding(id)
+    else updateHolding(id, { quantity: left })
+    return left
   }
 
   function removeHolding(id: string) {
@@ -190,10 +231,10 @@ export function usePortfolio() {
   }
 
   function applyHoldings(next: z.infer<typeof holdingSchema>[]) {
-    holdings.value = structuredClone(next).map((h) => ({
+    holdings.value = mergeDuplicateHoldings(structuredClone(next).map((h) => ({
       ...h,
-      createdAt: h.createdAt ?? h.id,
-    }))
+      createdAt: createdAtOf(h),
+    })))
     isDemoPortfolio.value = false
     if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
     useWatchlist().resetDemoWatchlist()
@@ -269,6 +310,7 @@ export function usePortfolio() {
     isDemoPortfolio: readonly(isDemoPortfolio),
     isDemoDismissed: readonly(isDemoDismissed),
     addHolding,
+    sellHolding,
     updateHolding,
     removeHolding,
     exportPortfolio,

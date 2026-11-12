@@ -25,11 +25,12 @@ export function calculateHoldingMetrics(holding: Holding, quote: Quote | null | 
   const prevClose = quote?.previousClose ?? quote?.price ?? 0
   const shareChange = quote?.change ?? (price > 0 && prevClose > 0 ? price - prevClose : 0)
   const dayChange = price === 0 ? 0 : holding.quantity * shareChange
+  // A percent move is per share — position size must not scale it.
   const dayChangePercent =
     quote?.changePercent !== undefined
-      ? holding.quantity * quote.changePercent
+      ? quote.changePercent
       : prevClose > 0
-        ? (dayChange / prevClose) * 100
+        ? (shareChange / prevClose) * 100
         : 0
   return {
     marketValue,
@@ -142,10 +143,16 @@ export function calculatePortfolioSummary(
   })
   const totalValue = metrics.reduce((s, m) => s + m.marketValue, 0)
   const totalCostBasis = metrics.reduce((s, m) => s + m.costBasis, 0)
-  const totalPnl = totalValue - totalCostBasis
+  // Return only counts positions with a value; an unpriced holding (quote still
+  // loading or failed) would otherwise read as a 100% loss.
+  const priced = metrics.filter((m) => m.marketValue > 0)
+  const pricedCost = priced.reduce((s, m) => s + m.costBasis, 0)
+  const totalPnl = priced.reduce((s, m) => s + m.pnl, 0)
   const totalDayChange = metrics.reduce((s, m) => s + m.dayChange, 0)
-  const totalPnlPercent = totalCostBasis > 0 ? (totalPnl / totalCostBasis) * 100 : undefined
-  const totalDayChangePercent = totalValue > 0 ? (totalDayChange / totalValue) * 100 : 0
+  const totalPnlPercent = pricedCost > 0 ? (totalPnl / pricedCost) * 100 : undefined
+  // Today's move relative to yesterday's value, not today's.
+  const previousValue = totalValue - totalDayChange
+  const totalDayChangePercent = previousValue > 0 ? (totalDayChange / previousValue) * 100 : 0
   return {
     totalValue,
     totalCostBasis,
@@ -158,3 +165,50 @@ export function calculatePortfolioSummary(
 }
 
 
+
+/**
+ * Buying more of a symbol you already hold: quantities add, cost becomes the
+ * quantity-weighted average (what a broker shows). Cash simply adds up.
+ */
+export function mergePosition(
+  existing: Pick<Holding, 'quantity' | 'averageCost'>,
+  added: Pick<Holding, 'quantity' | 'averageCost'>,
+): { quantity: number; averageCost: number } {
+  const quantity = existing.quantity + added.quantity
+  const averageCost =
+    quantity > 0
+      ? (existing.quantity * existing.averageCost + added.quantity * added.averageCost) / quantity
+      : existing.averageCost
+  return { quantity, averageCost }
+}
+
+/**
+ * Collapse rows that share a symbol (saved before adds were merged, or from an
+ * imported file) into one position. Keeps the first row's id, the earliest
+ * createdAt, and the first non-empty notes.
+ */
+export function mergeDuplicateHoldings<T extends Holding>(holdings: readonly T[]): T[] {
+  const bySymbol = new Map<string, T>()
+  for (const h of holdings) {
+    const prev = bySymbol.get(h.symbol)
+    if (!prev) {
+      bySymbol.set(h.symbol, h)
+      continue
+    }
+    bySymbol.set(h.symbol, {
+      ...prev,
+      ...mergePosition(prev, h),
+      notes: prev.notes || h.notes,
+      createdAt: [prev.createdAt, h.createdAt].filter(Boolean).sort()[0],
+    })
+  }
+  return [...bySymbol.values()]
+}
+
+/**
+ * Units left after selling `sold` of `held`. Rounded to 8 decimals so 0.3 − 0.1
+ * leaves 0.2 (not 0.19999999999999998); 0 means the position is closed.
+ */
+export function remainingAfterSell(held: number, sold: number): number {
+  return Math.max(0, Math.round((held - sold) * 1e8) / 1e8)
+}

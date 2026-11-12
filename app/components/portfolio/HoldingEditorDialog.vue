@@ -86,6 +86,14 @@ const liveQuote = computed(() => {
   return quotes.getQuote(selectedSymbol.value)
 })
 
+// The exchange knows the trading currency; the .JK suffix guess misses .KL, .SI, etc.
+watch(
+  () => liveQuote.value?.currency,
+  (cur) => {
+    if (cur && step.value === 'form' && !isEdit.value) currency.value = cur
+  },
+)
+
 const estimatedTotal = computed(() => {
   const q = Number(quantity.value)
   const c = Number(averageCost.value)
@@ -216,12 +224,12 @@ function validateCash(): boolean {
   nameError.value = ''
   let ok = true
   if (!cashName.value.trim()) {
-    nameError.value = 'Enter an account name (e.g. bank).'
+    nameError.value = t('editorErrorName')
     ok = false
   }
   const q = Number(quantity.value)
   if (!Number.isFinite(q) || q <= 0) {
-    qtyError.value = 'Amount must be greater than 0.'
+    qtyError.value = t('editorErrorAmount')
     ok = false
   }
   return ok
@@ -253,11 +261,11 @@ function validate(): boolean {
   const q = Number(quantity.value)
   const c = Number(averageCost.value)
   if (!Number.isFinite(q) || q <= 0) {
-    qtyError.value = 'Quantity must be greater than 0.'
+    qtyError.value = t('editorErrorQuantity')
     ok = false
   }
   if (!Number.isFinite(c) || c < 0) {
-    costError.value = 'Please enter a valid average cost.'
+    costError.value = t('editorErrorCost')
     ok = false
   }
   return ok
@@ -285,11 +293,16 @@ async function save() {
       toast.success(t('editorUpdated', { name: isCashH ? (parsed.name ?? 'Cash') : parsed.symbol }))
       emit('saved', { ...props.holding, ...parsed }, false)
     } else {
+      const topUp = portfolio.holdings.value.some((h) => h.symbol === parsed.symbol)
       const holding = portfolio.addHolding(parsed)
-      toast.success(t('editorAdded', { name: isCashH ? (parsed.name ?? 'Cash') : parsed.symbol }))
+      const name = isCashH ? (parsed.name ?? 'Cash') : parsed.symbol
+      toast.success(t(topUp ? 'editorMerged' : 'editorAdded', { name }))
       emit('saved', holding, true)
     }
     emit('close')
+  } catch {
+    // Schema rejected something the field checks let through (e.g. a 31+ char symbol).
+    toast.error(t('editorErrorSave'))
   } finally {
     submitting.value = false
   }
@@ -299,7 +312,7 @@ async function save() {
 <template>
   <UiDialog :open="open" @update:open="(v: boolean) => !v && emit('close')">
     <UiDialogContent
-      class="sm:max-w-md rounded-3xl p-5 sm:p-6 border border-border/80 bg-card shadow-2xl transition-all"
+      class="px-5 pt-5 border border-border/80 bg-card shadow-2xl"
     >
       <UiDialogHeader class="text-left">
         <UiDialogTitle class="text-base font-semibold tracking-tight">

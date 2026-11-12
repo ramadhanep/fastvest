@@ -18,8 +18,8 @@ const {
 } = usePortfolio()
 
 const quotes = useQuotes()
-const { preferences } = usePreferences()
-const { t } = useI18n()
+const { preferences, setHideBalance } = usePreferences()
+const { t, locale } = useI18n()
 const { online, justBackOnline } = useConnection()
 const { refresh, getQuote, errors, lastUpdated, refreshing } = quotes
 const addModal = useAddHoldingModal()
@@ -32,7 +32,10 @@ const editingHolding = ref<Holding | null>(null)
 const deletingHolding = ref<Holding | null>(null)
 const filteringSymbol = ref<string | null>(null)
 const filteringCurrency = ref<string | null>(null)
-const showBalance = ref(true)
+const showBalance = computed({
+  get: () => !preferences.value.hideBalance,
+  set: (v: boolean) => setHideBalance(!v),
+})
 
 // Watch addModal trigger
 watch(addModal.isOpen, (open) => {
@@ -132,13 +135,13 @@ onMounted(() => {
 <template>
   <div>
     <!-- Empty State if no holdings -->
-    <div v-if="!holdings.length && !storageError" class="mt-4 px-4 sm:px-0">
+    <div v-if="!holdings.length && !storageError" class="mt-4 px-4">
       <EmptyState @add="openAdd" @load-demo="loadDemoPortfolio" />
     </div>
 
     <template v-else>
       <!-- Storage error banner -->
-      <div v-if="storageError" class="mt-4 px-4 sm:px-0">
+      <div v-if="storageError" class="mt-4 px-4">
         <div class="rounded-3xl border border-border/70 bg-card p-5">
           <div class="flex items-start gap-3">
             <AlertCircle class="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
@@ -162,7 +165,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="space-y-4 sm:space-y-5 px-4 sm:px-0">
+      <div class="space-y-4 px-4">
         <!-- Demo Portfolio Banner -->
         <DemoPortfolioBanner
           v-if="isDemoPortfolio && !isDemoDismissed"
@@ -230,7 +233,7 @@ onMounted(() => {
 
       <!-- Status footer -->
       <div class="mt-8 px-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/30 pt-4 text-[11px] text-muted-foreground">
-        <span v-if="lastUpdated">{{ t('updatedAt', { time: formatTimeAgo(lastUpdated) }) }}</span>
+        <span v-if="lastUpdated">{{ t('updatedAt', { time: formatTimeAgo(lastUpdated, undefined, locale) }) }}</span>
         <span v-if="!online">{{ t('offlineCached') }}</span>
         <span>{{ hasQuotes ? t('quotesViaYahoo') : t('refreshToSeeQuotes') }}</span>
       </div>

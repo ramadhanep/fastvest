@@ -49,7 +49,9 @@ Most portfolio trackers want an account before they show you a number. Fastvest 
 - Total value, cost basis, unrealized P&L, and today's P&L in one summary card
 - Performance chart reconstructed from when you added each holding
 - Allocation donut, tappable to filter holdings by position or currency. Slices are ordered so cash stays in one block and repeated symbols stay adjacent — the legend always matches the ring
-- Holdings table — price, market value, average cost, P&L, daily change; sortable on desktop, swipe-revealed actions on mobile
+- Share an allocation snapshot as an image — percentages only, never amounts
+- Hide balances with one tap; remembered across launches and applied to every amount on every screen
+- Holdings list — market value, average cost, P&L, daily change; sortable (tap the arrow to reverse), swipe-revealed edit/delete
 - Holding detail page — price history over 7 ranges, plus invested, market value, day change, total return, weight, currency, and add date
 - Cash positions alongside equities, so a savings account is a first-class holding
 - Multi-currency: USD, IDR, MYR — FX-normalized totals with per-currency breakdown
@@ -58,12 +60,14 @@ Most portfolio trackers want an account before they show you a number. Fastvest 
 
 - Debounced Yahoo Finance symbol search with recently searched symbols
 - Fractional shares, zero-cost positions, optional currency and notes
+- Buying a symbol you already hold tops up that position (weighted average cost)
+- Sell part or all of a position from its detail page, with an estimated realized P&L
 - Manual entry for anything the market doesn't have a ticker for
 - Watchlist for symbols you don't own yet
 
 **Data safety**
 
-- Export as JSON, or as an encrypted transfer code (passphrase-protected) to move to another device
+- Export as JSON, or as an encrypted transfer code (passphrase of 8+ characters) to move to another device
 - Import never silently overwrites — you confirm what's being replaced
 - Reset is explicit and separate from import
 
@@ -74,7 +78,8 @@ Most portfolio trackers want an account before they show you a number. Fastvest 
 - Manual and automatic refresh (60s default, smart about hidden and offline tabs)
 - Stale-while-refresh quotes — the dashboard never blocks on the network
 - English and Bahasa Indonesia
-- Installable PWA with offline app shell
+- Installable PWA with offline app shell; edge-swipe back when launched from the iOS home screen
+- Mobile-only layout: phone-width column on any screen, every form is a bottom sheet you can swipe down to dismiss
 - Settings stay small on purpose: theme, language, refresh interval, transfer, reset, disclaimer
 
 ---
