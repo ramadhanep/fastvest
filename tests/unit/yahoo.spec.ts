@@ -16,7 +16,7 @@ vi.mock('yahoo-finance2', () => ({
   }),
 }))
 
-import { getQuotes, searchSymbols } from '../../server/services/yahoo'
+import { getQuotes, searchSymbols, toIsoTime } from '../../server/services/yahoo'
 import { MarketDataError } from '../../server/utils/errors'
 import { cacheClear } from '../../server/services/cache'
 
@@ -123,5 +123,13 @@ describe('searchSymbols', () => {
   it('wraps upstream failures as MARKET_DATA_UNAVAILABLE', async () => {
     mocks.search.mockRejectedValue(new Error('timeout'))
     await expect(searchSymbols('aapl')).rejects.toThrow(MarketDataError)
+  })
+})
+describe('toIsoTime', () => {
+  it('accepts the Date yahoo-finance2 returns and raw epoch seconds', () => {
+    const d = new Date('2026-11-12T10:00:00.000Z')
+    expect(toIsoTime(d)).toBe('2026-11-12T10:00:00.000Z')
+    expect(toIsoTime(d.getTime() / 1000)).toBe('2026-11-12T10:00:00.000Z')
+    expect(toIsoTime(undefined)).toBeUndefined()
   })
 })

@@ -13,6 +13,7 @@ const lastUpdated = ref<string | null>(null)
 const cacheLoaded = ref(false)
 const refreshing = ref(false)
 let activeRequest: Promise<void> | null = null
+let activeSymbols = new Set<string>()
 
 export function useQuotes() {
   function loadCache() {
@@ -37,16 +38,24 @@ export function useQuotes() {
   }
 
   async function refresh(symbols: string[]): Promise<void> {
-    const unique = [...new Set(symbols.filter(Boolean))].sort()
-    if (unique.length === 0) return
+    let pending = [...new Set(symbols.filter(Boolean))].sort()
+    // A request already in flight may not cover these symbols (e.g. the watchlist
+    // asking while the portfolio refresh runs) — wait for it, then fetch the rest.
+    while (activeRequest) {
+      const covered = activeSymbols
+      pending = pending.filter((s) => !covered.has(s))
+      if (pending.length === 0) return activeRequest
+      await activeRequest
+    }
+    if (pending.length === 0) return
 
-    if (activeRequest) return activeRequest
-
-    activeRequest = doRefresh(unique)
+    activeSymbols = new Set(pending)
+    activeRequest = doRefresh(pending)
     try {
       await activeRequest
     } finally {
       activeRequest = null
+      activeSymbols = new Set()
     }
   }
 
@@ -57,6 +66,8 @@ export function useQuotes() {
       const res = await $fetch<{ data: Quote[]; errors: QuoteError[] }>('/api/quotes', {
         query: { symbols: unique.join(',') },
       })
+      // The network is back — drop the global "unavailable" error.
+      errors.value = errors.value.filter((e) => e.symbol !== '*')
       const map: Record<string, Quote> = { ...quotes.value }
       for (const q of res.data) {
         map[q.symbol] = q

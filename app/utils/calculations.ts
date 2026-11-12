@@ -143,10 +143,16 @@ export function calculatePortfolioSummary(
   })
   const totalValue = metrics.reduce((s, m) => s + m.marketValue, 0)
   const totalCostBasis = metrics.reduce((s, m) => s + m.costBasis, 0)
-  const totalPnl = totalValue - totalCostBasis
+  // Return only counts positions with a value; an unpriced holding (quote still
+  // loading or failed) would otherwise read as a 100% loss.
+  const priced = metrics.filter((m) => m.marketValue > 0)
+  const pricedCost = priced.reduce((s, m) => s + m.costBasis, 0)
+  const totalPnl = priced.reduce((s, m) => s + m.pnl, 0)
   const totalDayChange = metrics.reduce((s, m) => s + m.dayChange, 0)
-  const totalPnlPercent = totalCostBasis > 0 ? (totalPnl / totalCostBasis) * 100 : undefined
-  const totalDayChangePercent = totalValue > 0 ? (totalDayChange / totalValue) * 100 : 0
+  const totalPnlPercent = pricedCost > 0 ? (totalPnl / pricedCost) * 100 : undefined
+  // Today's move relative to yesterday's value, not today's.
+  const previousValue = totalValue - totalDayChange
+  const totalDayChangePercent = previousValue > 0 ? (totalDayChange / previousValue) * 100 : 0
   return {
     totalValue,
     totalCostBasis,
@@ -159,3 +165,19 @@ export function calculatePortfolioSummary(
 }
 
 
+
+/**
+ * Buying more of a symbol you already hold: quantities add, cost becomes the
+ * quantity-weighted average (what a broker shows). Cash simply adds up.
+ */
+export function mergePosition(
+  existing: Pick<Holding, 'quantity' | 'averageCost'>,
+  added: Pick<Holding, 'quantity' | 'averageCost'>,
+): { quantity: number; averageCost: number } {
+  const quantity = existing.quantity + added.quantity
+  const averageCost =
+    quantity > 0
+      ? (existing.quantity * existing.averageCost + added.quantity * added.averageCost) / quantity
+      : existing.averageCost
+  return { quantity, averageCost }
+}

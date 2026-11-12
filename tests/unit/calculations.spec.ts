@@ -4,6 +4,7 @@ import {
   calculatePortfolioSummary,
   orderAllocationSlices,
   calculatePortfolioRiskProfile,
+  mergePosition,
 } from '~/utils/calculations'
 import type { Holding, Quote } from '#shared/types'
 
@@ -93,6 +94,19 @@ describe('calculatePortfolioSummary', () => {
     expect(s.holdingsCount).toBe(0)
   })
 
+  it('does not count an unpriced holding as a 100% loss', () => {
+    const holdings = [holding, { ...holding, id: '2', symbol: 'NEW' }]
+    const s = calculatePortfolioSummary(holdings, (sym) => (sym === 'AAPL' ? quote : null))
+    expect(s.totalPnl).toBe(500)
+    expect(s.totalPnlPercent).toBe(50)
+  })
+
+  it('measures today against yesterday\'s value', () => {
+    // AAPL: 10 × 150 now, +5 per share today → yesterday 1450
+    const s = calculatePortfolioSummary([holding], () => quote)
+    expect(s.totalDayChangePercent).toBeCloseTo((50 / 1450) * 100, 6)
+  })
+
   it('undefined pnl percent when total cost is zero', () => {
     const s = calculatePortfolioSummary([{ ...holding, averageCost: 0 }], () => null)
     expect(s.totalPnlPercent).toBeUndefined()
@@ -169,5 +183,11 @@ describe('orderAllocationSlices', () => {
     const input = [slice('B', 1), slice('A', 2)]
     orderAllocationSlices(input)
     expect(input.map((s) => s.label)).toEqual(['B', 'A'])
+  })
+})
+describe('mergePosition', () => {
+  it('adds quantity and weights the average cost', () => {
+    // 10 @ 100 + 30 @ 200 → 40 @ 175
+    expect(mergePosition({ quantity: 10, averageCost: 100 }, { quantity: 30, averageCost: 200 })).toEqual({ quantity: 40, averageCost: 175 })
   })
 })
