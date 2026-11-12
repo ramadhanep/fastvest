@@ -4,7 +4,7 @@ import { Upload, Trash2, RefreshCw, Layers, ExternalLink, Share2, Copy, Check, F
 import { toast } from 'vue-sonner'
 import type { ThemePreference } from '~/composables/usePreferences'
 import type { ImportErrorCode } from '~/composables/usePortfolio'
-import { MIN_PASSPHRASE } from '~/lib/backup'
+import { BackupError, MIN_PASSPHRASE } from '~/lib/backup'
 
 useHead({ title: 'Fastvest · Settings' })
 
@@ -29,7 +29,9 @@ const transferError = ref('')
 const transferBusy = ref(false)
 const copied = ref(false)
 
+// Minimum applies to new codes only; restoring an older code needs just a passphrase.
 const passTooShort = computed(() => passphrase.value.trim().length < MIN_PASSPHRASE)
+const passEmpty = computed(() => !passphrase.value.trim())
 
 const IMPORT_ERROR_KEYS: Record<ImportErrorCode, 'transferErrWeakPass' | 'transferErrWrongPass' | 'transferErrCorrupt' | 'transferErrFormat' | 'transferErrRead'> = {
   weakPass: 'transferErrWeakPass',
@@ -55,8 +57,8 @@ async function createTransferCode() {
   try {
     transferCode.value = await buildBackupCode(passphrase.value)
     transferError.value = ''
-  } catch {
-    transferError.value = t('transferErrWeakPass')
+  } catch (e) {
+    transferError.value = t(e instanceof BackupError && e.code === 'weakPass' ? 'transferErrWeakPass' : 'transferErrCreate')
   } finally {
     transferBusy.value = false
   }
@@ -64,13 +66,18 @@ async function createTransferCode() {
 
 async function copyTransferCode() {
   if (!transferCode.value) return
-  await navigator.clipboard.writeText(transferCode.value)
-  copied.value = true
-  toast.success(t('transferCopiedToast'))
+  try {
+    // Clipboard is missing on plain http and can be denied; the code stays selectable below.
+    await navigator.clipboard.writeText(transferCode.value)
+    copied.value = true
+    toast.success(t('transferCopiedToast'))
+  } catch {
+    toast.error(t('transferCopyFailed'))
+  }
 }
 
 async function restoreTransferCode() {
-  if (!transferCode.value || passTooShort.value) return
+  if (!transferCode.value || passEmpty.value) return
   transferBusy.value = true
   try {
     const res = await applyBackupCode(transferCode.value, passphrase.value)
@@ -457,7 +464,7 @@ function formatBytes(bytes: number) {
           <button
             type="button"
             class="w-full h-10 rounded-full text-xs font-medium bg-foreground text-background disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-            :disabled="passTooShort || transferBusy || !transferCode"
+            :disabled="passEmpty || transferBusy || !transferCode"
             @click="restoreTransferCode"
           >
             {{ transferBusy ? '…' : t('transferRestore') }}

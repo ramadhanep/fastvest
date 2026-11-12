@@ -37,7 +37,7 @@
       @touchstart.passive="onTouchStart"
       @touchmove.passive="onTouchMove"
       @touchend="onTouchEnd"
-      @touchcancel="onTouchEnd"
+      @touchcancel="onTouchCancel"
     >
       <slot />
     </main>
@@ -274,6 +274,14 @@ function onTouchMove(e: TouchEvent) {
   } else {
     pullY.value = 0
   }
+}
+
+// The system took the gesture (call, notification, scroll) — reset, never act.
+function onTouchCancel() {
+  edgeDragging.value = false
+  edgeX.value = 0
+  pulling.value = false
+  pullY.value = 0
 }
 
 function onTouchEnd() {

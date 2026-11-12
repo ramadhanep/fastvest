@@ -19,7 +19,7 @@ const {
 
 const quotes = useQuotes()
 const { preferences, setHideBalance } = usePreferences()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { online, justBackOnline } = useConnection()
 const { refresh, getQuote, errors, lastUpdated, refreshing } = quotes
 const addModal = useAddHoldingModal()
@@ -233,7 +233,7 @@ onMounted(() => {
 
       <!-- Status footer -->
       <div class="mt-8 px-4 flex flex-wrap items-center justify-between gap-2 border-t border-border/30 pt-4 text-[11px] text-muted-foreground">
-        <span v-if="lastUpdated">{{ t('updatedAt', { time: formatTimeAgo(lastUpdated) }) }}</span>
+        <span v-if="lastUpdated">{{ t('updatedAt', { time: formatTimeAgo(lastUpdated, undefined, locale) }) }}</span>
         <span v-if="!online">{{ t('offlineCached') }}</span>
         <span>{{ hasQuotes ? t('quotesViaYahoo') : t('refreshToSeeQuotes') }}</span>
       </div>

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Pencil, Trash2, Loader2, Plus } from '@lucide/vue'
+import { Pencil, Trash2, Loader2, Plus, HandCoins } from '@lucide/vue'
 import type { ChartData, ChartPoint, Holding } from '#shared/types'
 import { calculateHoldingMetrics } from '~/utils/calculations'
+import { toast } from 'vue-sonner'
 import { formatCurrency, formatPercent, formatNumber, formatQuantity, formatDate, formatTime } from '~/utils/format'
 import { brandColorFor } from '~/utils/brand-colors'
 
@@ -13,7 +14,7 @@ const { has: hasWatch } = useWatchlist()
 const addModal = useAddHoldingModal()
 const quotes = useQuotes()
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { preferences } = usePreferences()
 // Mask personal amounts (not market prices) when the balance is hidden.
 const mask = (v: string) => (preferences.value.hideBalance ? '••••' : v)
@@ -141,7 +142,7 @@ function quoteRows(): DetailRow[] {
     rows.push({ key: 'prev', label: t('detailPrevClose'), value: formatCurrency(quote.value.previousClose, cur) })
   }
   if (quote.value?.marketTime) {
-    rows.push({ key: 'updated', label: t('detailLastUpdate'), value: formatTime(quote.value.marketTime) })
+    rows.push({ key: 'updated', label: t('detailLastUpdate'), value: formatTime(quote.value.marketTime, locale.value) })
   }
   return rows
 }
@@ -181,12 +182,25 @@ const detailRows = computed<DetailRow[]>(() => {
   if (!cash && h.isCash) {
     rows.push({ key: 'cashFlag', label: t('detailCountedAsCash'), value: t('detailYes') })
   }
-  rows.push({ key: 'added', label: t('detailAdded'), value: formatDate(h.createdAt) })
+  rows.push({ key: 'added', label: t('detailAdded'), value: formatDate(h.createdAt, locale.value) })
   return [...rows, ...quoteRows()]
 })
 
 const editorOpen = ref(false)
 const deleting = ref(false)
+const selling = ref(false)
+
+function onSold(left: number, sold: number) {
+  const h = holding.value
+  selling.value = false
+  if (!h) return
+  if (left === 0) {
+    toast.success(t('sellClosed', { symbol: h.symbol }))
+    void router.replace('/')
+  } else {
+    toast.success(t('sellDone', { qty: formatQuantity(sold), symbol: h.symbol }))
+  }
+}
 onMounted(() => {
   ensureRates()
   if (isWatch.value && !quotes.getQuote(symbol.value)) quotes.refresh([symbol.value])
@@ -335,7 +349,16 @@ function confirmDelete() {
           {{ t('detailTrackBody') }}
         </p>
       </div>
-      <div v-else-if="holding" class="mt-6 grid grid-cols-2 gap-3">
+      <div v-else-if="holding" class="mt-6 grid gap-3" :class="isCashSymbol ? 'grid-cols-2' : 'grid-cols-3'">
+        <button
+          v-if="!isCashSymbol"
+          type="button"
+          class="inline-flex items-center justify-center gap-2 rounded-2xl bg-foreground text-background h-12 text-sm font-semibold cursor-pointer ios-press"
+          @click="selling = true"
+        >
+          <HandCoins class="size-4" aria-hidden="true" />
+          {{ t('detailSell') }}
+        </button>
         <button
           type="button"
           class="inline-flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card h-12 text-sm font-semibold cursor-pointer ios-press active:bg-muted/40"
@@ -356,6 +379,7 @@ function confirmDelete() {
     </div>
 
     <HoldingEditorDialog :open="editorOpen" :holding="holding" @saved="editorOpen = false" @close="editorOpen = false" />
+    <SellHoldingSheet :open="selling" :holding="holding" :quote="quote" @sold="onSold" @close="selling = false" />
     <DeleteHoldingDialog :holding="deleting ? holding : null" @confirm="confirmDelete" @close="deleting = false" />
   </div>
 </template>

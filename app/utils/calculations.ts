@@ -181,3 +181,34 @@ export function mergePosition(
       : existing.averageCost
   return { quantity, averageCost }
 }
+
+/**
+ * Collapse rows that share a symbol (saved before adds were merged, or from an
+ * imported file) into one position. Keeps the first row's id, the earliest
+ * createdAt, and the first non-empty notes.
+ */
+export function mergeDuplicateHoldings<T extends Holding>(holdings: readonly T[]): T[] {
+  const bySymbol = new Map<string, T>()
+  for (const h of holdings) {
+    const prev = bySymbol.get(h.symbol)
+    if (!prev) {
+      bySymbol.set(h.symbol, h)
+      continue
+    }
+    bySymbol.set(h.symbol, {
+      ...prev,
+      ...mergePosition(prev, h),
+      notes: prev.notes || h.notes,
+      createdAt: [prev.createdAt, h.createdAt].filter(Boolean).sort()[0],
+    })
+  }
+  return [...bySymbol.values()]
+}
+
+/**
+ * Units left after selling `sold` of `held`. Rounded to 8 decimals so 0.3 − 0.1
+ * leaves 0.2 (not 0.19999999999999998); 0 means the position is closed.
+ */
+export function remainingAfterSell(held: number, sold: number): number {
+  return Math.max(0, Math.round((held - sold) * 1e8) / 1e8)
+}

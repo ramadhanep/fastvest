@@ -5,7 +5,7 @@ import { BackupError, decodeBackup, encodeBackup, isBackupCode } from '~/lib/bac
 import { toast } from 'vue-sonner'
 import { z } from 'zod'
 import { useWatchlist } from './useWatchlist'
-import { mergePosition } from '~/utils/calculations'
+import { mergeDuplicateHoldings, mergePosition, remainingAfterSell } from '~/utils/calculations'
 
 export type ImportErrorCode = 'encrypted' | 'format' | 'read' | 'weakPass' | 'wrongPass' | 'corrupt'
 
@@ -116,10 +116,10 @@ export function usePortfolio() {
     if (raw && raw.holdings) {
       const parsed = z.array(holdingSchema).safeParse(raw.holdings)
       if (parsed.success) {
-        holdings.value = parsed.data.map((h) => ({
+        holdings.value = mergeDuplicateHoldings(parsed.data.map((h) => ({
           ...h,
           createdAt: createdAtOf(h),
-        }))
+        })))
         const isDemoIds = holdings.value.length === DEFAULT_DEMO_HOLDINGS.length &&
           holdings.value.every((h) => h.id.startsWith('demo-'))
         isDemoPortfolio.value = isDemoIds
@@ -175,6 +175,16 @@ export function usePortfolio() {
     persist()
   }
 
+  /** Sell part of a position; average cost is unchanged. Returns units left (0 = closed). */
+  function sellHolding(id: string, quantity: number): number {
+    const h = holdings.value.find((x) => x.id === id)
+    if (!h) return 0
+    const left = remainingAfterSell(h.quantity, quantity)
+    if (left === 0) removeHolding(id)
+    else updateHolding(id, { quantity: left })
+    return left
+  }
+
   function removeHolding(id: string) {
     holdings.value = holdings.value.filter((h) => h.id !== id)
     if (holdings.value.length === 0) {
@@ -221,10 +231,10 @@ export function usePortfolio() {
   }
 
   function applyHoldings(next: z.infer<typeof holdingSchema>[]) {
-    holdings.value = structuredClone(next).map((h) => ({
+    holdings.value = mergeDuplicateHoldings(structuredClone(next).map((h) => ({
       ...h,
       createdAt: createdAtOf(h),
-    }))
+    })))
     isDemoPortfolio.value = false
     if (typeof localStorage !== 'undefined') localStorage.setItem(DEMO_CLEARED_KEY, 'true')
     useWatchlist().resetDemoWatchlist()
@@ -300,6 +310,7 @@ export function usePortfolio() {
     isDemoPortfolio: readonly(isDemoPortfolio),
     isDemoDismissed: readonly(isDemoDismissed),
     addHolding,
+    sellHolding,
     updateHolding,
     removeHolding,
     exportPortfolio,

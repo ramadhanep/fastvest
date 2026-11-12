@@ -60,12 +60,14 @@ Most portfolio trackers want an account before they show you a number. Fastvest 
 
 - Debounced Yahoo Finance symbol search with recently searched symbols
 - Fractional shares, zero-cost positions, optional currency and notes
+- Buying a symbol you already hold tops up that position (weighted average cost)
+- Sell part or all of a position from its detail page, with an estimated realized P&L
 - Manual entry for anything the market doesn't have a ticker for
 - Watchlist for symbols you don't own yet
 
 **Data safety**
 
-- Export as JSON, or as an encrypted transfer code (passphrase-protected) to move to another device
+- Export as JSON, or as an encrypted transfer code (passphrase of 8+ characters) to move to another device
 - Import never silently overwrites — you confirm what's being replaced
 - Reset is explicit and separate from import
 
@@ -77,7 +79,7 @@ Most portfolio trackers want an account before they show you a number. Fastvest 
 - Stale-while-refresh quotes — the dashboard never blocks on the network
 - English and Bahasa Indonesia
 - Installable PWA with offline app shell; edge-swipe back when launched from the iOS home screen
-- Mobile-only layout: phone-width column on any screen, every form is a bottom sheet
+- Mobile-only layout: phone-width column on any screen, every form is a bottom sheet you can swipe down to dismiss
 - Settings stay small on purpose: theme, language, refresh interval, transfer, reset, disclaimer
 
 ---

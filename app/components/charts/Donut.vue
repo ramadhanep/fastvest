@@ -37,6 +37,7 @@ const tooltipText = computed(() => (isDark.value ? '#f5f5f7' : '#1c1c1e'))
 const ringBorder = computed(() => (isDark.value ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'))
 
 const total = computed(() => props.segments.reduce((s, p) => s + p.value, 0))
+const { preferences } = usePreferences()
 
 const pieData = computed(() =>
   props.segments.map((s) => ({
@@ -69,7 +70,7 @@ const option = computed(() => ({
     formatter: (p: TooltipParam) => {
       const pct = total.value ? (p.value / total.value) * 100 : 0
       const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`
-      return `<div style="font-size:12px">${dot}<strong>${p.name}</strong> · <span style="opacity:.7">${formatCompact(p.value)}</span></div><div style="font-size:11px;opacity:.7">${t('allocationOfPortfolio', { pct: pct.toFixed(1) })}</div>`
+      return `<div style="font-size:12px">${dot}<strong>${p.name}</strong>${preferences.value.hideBalance ? '' : ` · <span style="opacity:.7">${formatCompact(p.value)}</span>`}</div><div style="font-size:11px;opacity:.7">${t('allocationOfPortfolio', { pct: pct.toFixed(1) })}</div>`
     },
   },
   series: [
@@ -105,7 +106,7 @@ defineExpose({ resize })
 </script>
 
 <template>
-  <div role="img" :style="{ width: `${size}px` }" :aria-label="t('allocationAria', { total: total ? total.toLocaleString('en-US', { maximumFractionDigits: 0 }) : 0, assets: segments.length })">
+  <div role="img" :style="{ width: `${size}px` }" :aria-label="t('allocationAria', { assets: segments.length })">
     <VChart
       ref="chartRef"
       class="w-full"

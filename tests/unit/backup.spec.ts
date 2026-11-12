@@ -24,31 +24,32 @@ describe('backup codec', () => {
   })
 
   it('survives the junk a chat app injects while copying', async () => {
-    const code = await encodeBackup(payload, 'pw1234')
+    const code = await encodeBackup(payload, 'pw123456')
     const mangled = `  ${code.slice(0, 20)}\n\n  ${code.slice(20).replace(/-/g, '-')}   `
-    expect(await decodeBackup(mangled, 'pw1234')).toEqual(payload)
+    expect(await decodeBackup(mangled, 'pw123456')).toEqual(payload)
   })
 
   it('rejects a wrong passphrase without corrupting anything', async () => {
-    const code = await encodeBackup(payload, 'pw1234')
+    const code = await encodeBackup(payload, 'pw123456')
     await expect(decodeBackup(code, 'nope9999')).rejects.toMatchObject({ code: 'wrongPass' })
   })
 
   it('rejects a tampered code', async () => {
-    const code = await encodeBackup(payload, 'pw1234')
+    const code = await encodeBackup(payload, 'pw123456')
     const i = code.length - 5
     const flipped = code[i] === 'A' ? 'B' : 'A'
-    await expect(decodeBackup(code.slice(0, i) + flipped + code.slice(i + 1), 'pw1234')).rejects.toBeInstanceOf(BackupError)
+    await expect(decodeBackup(code.slice(0, i) + flipped + code.slice(i + 1), 'pw123456')).rejects.toBeInstanceOf(BackupError)
   })
 
   it('never emits base64 + / = characters that break paste', async () => {
-    const code = await encodeBackup(payload, 'pw1234')
+    const code = await encodeBackup(payload, 'pw123456')
     expect(code).toMatch(/^FV1B1-[A-Za-z0-9_-]+$/)
   })
 
   it('rejects weak and non-backup input', async () => {
     await expect(encodeBackup(payload, 'ab')).rejects.toMatchObject({ code: 'weakPass' })
-    await expect(decodeBackup('{"version":1}', 'pw1234')).rejects.toMatchObject({ code: 'format' })
+    await expect(encodeBackup(payload, 'seven77')).rejects.toMatchObject({ code: 'weakPass' })
+    await expect(decodeBackup('{"version":1}', 'pw123456')).rejects.toMatchObject({ code: 'format' })
   })
 
   it('detects legacy JSON as not a backup code', () => {
@@ -57,15 +58,15 @@ describe('backup codec', () => {
   })
 
   it('produces a different code every time (random salt + iv)', async () => {
-    const a = await encodeBackup(payload, 'pw1234')
-    const b = await encodeBackup(payload, 'pw1234')
+    const a = await encodeBackup(payload, 'pw123456')
+    const b = await encodeBackup(payload, 'pw123456')
     expect(a).not.toBe(b)
-    expect(await decodeBackup(b, 'pw1234')).toEqual(payload)
+    expect(await decodeBackup(b, 'pw123456')).toEqual(payload)
   })
 
   it('is much smaller than the raw JSON', async () => {
     const raw = JSON.stringify(payload).length
-    const code = await encodeBackup(payload, 'pw1234')
+    const code = await encodeBackup(payload, 'pw123456')
     expect(code.length).toBeLessThan(raw)
   })
 })
