@@ -65,6 +65,7 @@ export const kv = {
   quoteCache: 'quote-cache',
   recentSearches: 'recent-searches',
   watchlist: 'watchlist',
+  fxRates: 'fx-rates',
 } as const
 
 export { SCHEMA_VERSION }

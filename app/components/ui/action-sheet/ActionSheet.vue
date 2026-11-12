@@ -46,7 +46,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div v-if="visible" class="fixed inset-0 z-50 flex items-end justify-center">
       <!-- Backdrop -->
       <div
         class="absolute inset-0 bg-black/40 transition-opacity duration-200"
@@ -57,7 +57,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
       <!-- Sheet -->
       <div
         ref="sheetRef"
-        class="relative w-full max-w-md mx-4 mb-4 sm:mb-0 rounded-2xl bg-card overflow-hidden transition-all duration-200 ease-out"
+        class="relative w-full max-w-md mx-4 mb-4 rounded-2xl bg-card overflow-hidden transition-all duration-200 ease-out"
         :class="open ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-[0.97]'"
       >
         <slot />

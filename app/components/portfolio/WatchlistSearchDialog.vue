@@ -37,7 +37,7 @@ function pickManual() {
 
 <template>
   <UiDialog :open="isOpen" @update:open="(v: boolean) => !v && close()">
-    <UiDialogContent class="sm:max-w-md rounded-3xl p-5 sm:p-6 border border-border/80 bg-card shadow-2xl">
+    <UiDialogContent class="px-5 pt-5 border border-border/80 bg-card shadow-2xl">
       <UiDialogHeader class="text-left">
         <UiDialogTitle class="text-base font-semibold tracking-tight">
           {{ t('watchlistAdd') }}

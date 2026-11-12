@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ChevronDown, Pencil, Trash2 } from '@lucide/vue'
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, Pencil, Trash2 } from '@lucide/vue'
 import type { Holding, Quote, SortKey } from '#shared/types'
 import type { I18nKey } from '~/i18n/en'
 import { calculateHoldingMetrics } from '~/utils/calculations'
@@ -22,6 +22,8 @@ const emit = defineEmits<{
 
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 const { t } = useI18n()
+const { preferences } = usePreferences()
+const hidden = computed(() => preferences.value.hideBalance)
 onMounted(ensureRates)
 
 const route = useRoute()
@@ -80,11 +82,10 @@ const rows = computed(() => {
 
   const dir = sortDir.value === 'asc' ? 1 : -1
   return filtered.sort((a, b) => {
-    const h = a.holding
-    const o = b.holding
     switch (sortKey.value) {
       case 'symbol':
-        return h.symbol.localeCompare(o.symbol) * dir
+        // Sort by what the row shows (cash rows display their name, not CASH-…).
+        return a.displayName.localeCompare(b.displayName) * dir
       case 'value':
         return (a.usdValue - b.usdValue) * dir
       case 'pnl':
@@ -97,6 +98,9 @@ const rows = computed(() => {
     }
   })
 })
+
+// Symbol reads A–Z by default; numeric sorts read biggest first.
+watch(sortKey, (k) => { sortDir.value = k === 'symbol' ? 'asc' : 'desc' })
 
 function sortLabel(key: SortKey) {
   return t(SORT_LABEL_KEYS[key])
@@ -205,6 +209,15 @@ function onRowClick(h: Holding) {
           </select>
           <ChevronDown class="pointer-events-none absolute right-2.5 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         </div>
+        <button
+          type="button"
+          :aria-label="t('sortDirAria')"
+          class="size-9 inline-flex items-center justify-center rounded-full bg-muted border border-border/60 text-muted-foreground cursor-pointer ios-press"
+          @click="sortDir = sortDir === 'asc' ? 'desc' : 'asc'"
+        >
+          <ArrowUpNarrowWide v-if="sortDir === 'asc'" class="size-3.5" aria-hidden="true" />
+          <ArrowDownWideNarrow v-else class="size-3.5" aria-hidden="true" />
+        </button>
       </div>
     </div>
 
@@ -229,7 +242,10 @@ function onRowClick(h: Holding) {
     </div>
 
     <!-- Holdings List -->
-    <div class="mt-3 -mx-4 sm:mx-0 rounded-none sm:rounded-2xl bg-card divide-y divide-border/30 overflow-hidden">
+    <p v-if="!rows.length" class="mt-3 rounded-2xl bg-card px-4 py-6 text-center text-xs text-muted-foreground">
+      {{ t('filterEmpty') }}
+    </p>
+    <div v-else class="mt-3 -mx-4 bg-card divide-y divide-border/30 overflow-hidden">
       <div
         v-for="(row, i) in rows"
         :key="row.holding.id"
@@ -241,6 +257,7 @@ function onRowClick(h: Holding) {
         <div class="absolute inset-y-0 right-0 flex items-center">
           <button
             type="button"
+            :aria-label="t('editAction', { symbol: row.holding.symbol })"
             class="h-full px-5 flex items-center justify-center bg-muted/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             @click.stop="emit('edit', row.holding); swipedId = null"
           >
@@ -248,6 +265,7 @@ function onRowClick(h: Holding) {
           </button>
           <button
             type="button"
+            :aria-label="t('deleteAction', { symbol: row.holding.symbol })"
             class="h-full px-5 flex items-center justify-center bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:bg-rose-500/25 transition-colors cursor-pointer"
             @click.stop="emit('remove', row.holding); swipedId = null"
           >
@@ -287,7 +305,8 @@ function onRowClick(h: Holding) {
               </div>
 
               <p class="truncate text-[11px] text-muted-foreground mt-0.5 tabular-nums">
-                <template v-if="row.isCashH">{{ formatCurrency(row.holding.quantity, row.currency) }}</template>
+                <template v-if="row.isCashH">{{ hidden ? '••••' : formatCurrency(row.holding.quantity, row.currency) }}</template>
+                <template v-else-if="hidden">•• · {{ formatNumber(row.holding.averageCost) }} {{ row.holding.currency ?? '' }}</template>
                 <template v-else>
                   {{ formatQuantity(row.holding.quantity) }} · {{ formatNumber(row.holding.averageCost) }} {{ row.holding.currency ?? '' }}
                 </template>
@@ -298,11 +317,14 @@ function onRowClick(h: Holding) {
           <!-- Market Value & Total Return -->
           <div class="text-right shrink-0">
             <p class="text-sm font-semibold tabular-nums text-foreground">
-              {{ row.quote
-                ? formatCurrency(row.metrics.marketValue, row.quote.currency ?? 'USD')
-                : row.isCashH
-                  ? formatCurrency(row.metrics.marketValue, row.currency)
-                  : '—' }}
+              <template v-if="hidden">••••</template>
+              <template v-else>
+                {{ row.quote
+                  ? formatCurrency(row.metrics.marketValue, row.quote.currency ?? 'USD')
+                  : row.isCashH
+                    ? formatCurrency(row.metrics.marketValue, row.currency)
+                    : '—' }}
+              </template>
             </p>
             <p
               class="text-[11px] font-medium tabular-nums mt-0.5"
@@ -314,7 +336,8 @@ function onRowClick(h: Holding) {
                   : 'text-muted-foreground'
               "
             >
-              <template v-if="row.quote && row.quote.price">
+              <template v-if="hidden && row.quote && row.quote.price">•••</template>
+              <template v-else-if="row.quote && row.quote.price">
                 {{ row.metrics.pnl >= 0 ? '+' : '' }}{{ formatCurrency(row.metrics.pnl, row.quote.currency ?? 'USD') }}
               </template>
               <template v-else>—</template>

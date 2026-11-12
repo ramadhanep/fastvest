@@ -167,7 +167,7 @@ function formatBytes(bytes: number) {
 
 <template>
   <div>
-    <div class="space-y-6 pb-12 px-4 sm:px-0">
+    <div class="space-y-6 pb-12 px-4">
       <!-- Appearance -->
       <section aria-labelledby="appearance-heading">
         <h2 id="appearance-heading" class="px-1 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{ t('settingsAppearance') }}</h2>
@@ -354,7 +354,7 @@ function formatBytes(bytes: number) {
 
     <!-- Dialogs -->
     <UiDialog :open="transferOpen" @update:open="(v: boolean) => transferOpen = v">
-      <UiDialogContent class="sm:max-w-md rounded-2xl p-5 border border-border/50 bg-card">
+      <UiDialogContent class="px-5 pt-5 border border-border/50 bg-card">
         <UiDialogHeader class="text-left">
           <UiDialogTitle class="text-base font-semibold">{{ t('transferTitle') }}</UiDialogTitle>
         </UiDialogHeader>

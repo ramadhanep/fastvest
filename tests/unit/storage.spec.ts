@@ -34,6 +34,7 @@ describe('storage layer', () => {
 
   it('exposes the known keys', () => {
     expect(Object.keys(kv).sort()).toEqual([
+      'fxRates',
       'portfolio',
       'preferences',
       'quoteCache',

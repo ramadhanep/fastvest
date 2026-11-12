@@ -5,6 +5,9 @@ import { brandColorFor, BRAND_FALLBACK } from '~/utils/brand-colors'
 import { formatCurrency } from '~/utils/format'
 import { useExchangeRates } from '~/composables/useExchangeRates'
 import { usePreferences } from '~/composables/usePreferences'
+import { Share } from '@lucide/vue'
+import { toast } from 'vue-sonner'
+import { renderAllocationImage, shareOrDownload, topRows } from '~/utils/share-image'
 
 const props = withDefaults(
   defineProps<{
@@ -114,6 +117,32 @@ function toggleCurrency(currency: string) {
   else emit('select-currency', currency)
 }
 
+const colorMode = useColorMode()
+const sharing = ref(false)
+
+async function shareSnapshot() {
+  if (sharing.value || !totalValue.value) return
+  sharing.value = true
+  try {
+    const shareRows = topRows(
+      segments.value.map((s) => ({ label: s.label, pct: (s.value / totalValue.value) * 100, color: s.color })),
+      t('allocationShareOthers'),
+    )
+    const date = new Date().toLocaleDateString(preferences.value.locale, { day: 'numeric', month: 'short', year: 'numeric' })
+    const blob = await renderAllocationImage(
+      shareRows,
+      t('allocationShareTitle'),
+      t('allocationShareFooter', { date }),
+      colorMode.value === 'dark',
+    )
+    await shareOrDownload(blob, 'fastvest-allocation.png')
+  } catch {
+    toast.error(t('allocationShareFailed'))
+  } finally {
+    sharing.value = false
+  }
+}
+
 // ─── Smooth accordion (grid-template-rows, GPU-friendly — no layout thrash) ─
 const isOpen = ref(false)
 
@@ -158,7 +187,7 @@ watch(isOpen, (open, prev) => {
     >
       <div class="min-h-0 overflow-hidden">
         <div
-          class="flex flex-col items-center sm:flex-row sm:items-start gap-4 sm:gap-6"
+          class="flex flex-col items-center gap-4"
           :class="isOpen ? 'mt-2 opacity-100' : 'opacity-0'"
         >
           <Donut
@@ -262,6 +291,16 @@ watch(isOpen, (open, prev) => {
             </div>
           </div>
         </div>
+
+        <button
+          type="button"
+          class="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-muted/50 text-xs font-medium text-foreground cursor-pointer ios-press disabled:opacity-50"
+          :disabled="sharing || !totalValue"
+          @click="shareSnapshot"
+        >
+          <Share class="size-3.5" aria-hidden="true" />
+          {{ t('allocationShare') }}
+        </button>
       </div>
     </div>
   </div>

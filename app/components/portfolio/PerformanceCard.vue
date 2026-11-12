@@ -10,6 +10,8 @@ const props = defineProps<{
 
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 const { t } = useI18n()
+const { preferences } = usePreferences()
+const hidden = computed(() => preferences.value.hideBalance)
 
 const RANGES = [
   { label: '1M', range: '1mo' },
@@ -155,6 +157,7 @@ const hasCash = computed(() => props.holdings.some((h) => h.isCash))
               :points="data"
               currency="USD"
               :height="200"
+              :masked="hidden"
             />
             <div v-else-if="loading && !data" class="text-xs text-muted-foreground">
               {{ t('performanceLoading') }}
@@ -166,7 +169,8 @@ const hasCash = computed(() => props.holdings.some((h) => h.isCash))
 
           <p v-if="periodChange" class="mt-3 flex items-center justify-center gap-1.5 text-xs font-medium tabular-nums">
             <span class="inline-flex items-center gap-1.5" :class="isGain ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
-              {{ isGain ? '+' : '' }}{{ formatCurrency(periodChange.change, 'USD') }}
+              <template v-if="hidden">•••</template>
+              <template v-else>{{ isGain ? '+' : '' }}{{ formatCurrency(periodChange.change, 'USD') }}</template>
               <span class="text-muted-foreground">{{ formatPercent(periodChange.percent) }} {{ t('performanceOverRange') }}</span>
             </span>
           </p>

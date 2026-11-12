@@ -14,6 +14,9 @@ const addModal = useAddHoldingModal()
 const quotes = useQuotes()
 const { ensureLoaded: ensureRates, toUsd } = useExchangeRates()
 const { t } = useI18n()
+const { preferences } = usePreferences()
+// Mask personal amounts (not market prices) when the balance is hidden.
+const mask = (v: string) => (preferences.value.hideBalance ? '••••' : v)
 
 const symbol = computed(() => String(route.params.symbol ?? ''))
 const holding = computed<Holding | null>(() =>
@@ -151,14 +154,14 @@ const detailRows = computed<DetailRow[]>(() => {
   if (!h) return quoteRows()
   const rows: DetailRow[] = []
   if (!cash) {
-    rows.push({ key: 'invested', label: t('detailInvested'), value: formatCurrency(m?.costBasis, cur) })
+    rows.push({ key: 'invested', label: t('detailInvested'), value: mask(formatCurrency(m?.costBasis, cur)) })
   }
-  rows.push({ key: 'mv', label: t('detailMarketValue'), value: formatCurrency(m?.marketValue, cur) })
+  rows.push({ key: 'mv', label: t('detailMarketValue'), value: mask(formatCurrency(m?.marketValue, cur)) })
   if (quote.value?.price) {
     rows.push({
       key: 'day',
       label: t('detailDayChange'),
-      value: `${(m?.dayChange ?? 0) >= 0 ? '+' : ''}${formatCurrency(m?.dayChange, cur)}`,
+      value: mask(`${(m?.dayChange ?? 0) >= 0 ? '+' : ''}${formatCurrency(m?.dayChange, cur)}`),
       sub: formatPercent(m?.dayChangePercent),
       tone: (m?.dayChange ?? 0) >= 0 ? 'gain' : 'loss',
     })
@@ -167,7 +170,7 @@ const detailRows = computed<DetailRow[]>(() => {
     rows.push({
       key: 'pnl',
       label: t('detailTotalReturn'),
-      value: (m?.pnl ?? 0) >= 0 ? `+${formatCurrency(m?.pnl, cur)}` : formatCurrency(m?.pnl, cur),
+      value: mask((m?.pnl ?? 0) >= 0 ? `+${formatCurrency(m?.pnl, cur)}` : formatCurrency(m?.pnl, cur)),
       sub: formatPercent(m?.pnlPercent),
       tone: (m?.pnl ?? 0) >= 0 ? 'gain' : 'loss',
     })
@@ -199,7 +202,7 @@ function confirmDelete() {
 
 <template>
   <div>
-    <div v-if="holding || isWatch" class="pb-12 px-4 sm:px-0">
+    <div v-if="holding || isWatch" class="pb-12 px-4">
       <!-- Header card -->
       <div class="mt-2 rounded-2xl p-5 backdrop-blur-xl transition-all card-press elev-2" :style="accentStyle">
         <div class="flex items-center justify-between">
@@ -208,7 +211,7 @@ function confirmDelete() {
             <div>
               <p class="text-sm font-semibold tracking-tight">{{ holding?.name ?? quote?.name ?? symbol }}</p>
               <p class="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[160px]">
-                {{ isCashSymbol ? t('detailCashBalance', { currency: holding?.currency ?? '' }) : (quote?.name ?? holding?.notes ?? (isWatch ? t('detailWatching') : '')) }}
+                {{ isCashSymbol ? t('detailCashBalance', { currency: holding?.currency ?? '' }) : isWatch ? `${symbol} · ${t('detailWatching')}` : symbol }}
               </p>
             </div>
           </div>
@@ -217,7 +220,7 @@ function confirmDelete() {
               v-if="isCashSymbol"
               class="font-display text-[1.75rem] font-semibold tabular-nums leading-none"
             >
-              {{ formatCurrency(holding?.quantity, holding?.currency ?? 'USD') }}
+              {{ mask(formatCurrency(holding?.quantity, holding?.currency ?? 'USD')) }}
             </div>
             <div v-else-if="quote" class="font-display text-[1.75rem] font-semibold tabular-nums leading-none">
               {{ formatCurrency(quote.price, quote.currency ?? 'USD') }}
@@ -227,7 +230,7 @@ function confirmDelete() {
               class="text-xs font-medium tabular-nums mt-1"
               :class="quote.changePercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
             >
-              {{ quote.changePercent >= 0 ? '+' : '' }}{{ formatPercent(quote.changePercent) }}
+              {{ formatPercent(quote.changePercent) }}
             </div>
           </div>
         </div>
@@ -235,7 +238,7 @@ function confirmDelete() {
         <div v-if="holding" class="mt-4 grid grid-cols-3 gap-2">
           <div>
             <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? t('detailAmount') : t('detailShares') }}</p>
-            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ isCashSymbol ? formatCurrency(holding.quantity, holding.currency ?? 'USD') : formatQuantity(holding.quantity) }}</p>
+            <p class="text-sm font-semibold tabular-nums mt-0.5">{{ mask(isCashSymbol ? formatCurrency(holding.quantity, holding.currency ?? 'USD') : formatQuantity(holding.quantity)) }}</p>
           </div>
           <div class="text-center">
             <p class="text-[10px] text-muted-foreground font-medium">{{ isCashSymbol ? t('detailCurrency') : t('detailAvgCost') }}</p>

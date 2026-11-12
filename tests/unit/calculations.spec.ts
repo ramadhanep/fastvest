@@ -58,12 +58,13 @@ describe('calculateHoldingMetrics', () => {
     const q: Quote = { symbol: 'AAPL', price: 150, previousClose: 140 }
     const m = calculateHoldingMetrics(holding, q)
     expect(m.dayChange).toBe(100)
+    expect(m.dayChangePercent).toBeCloseTo(7.142, 2) // (150-140)/140
   })
 
   it('computes day change percent from previous close', () => {
     const m = calculateHoldingMetrics(holding, quote)
     expect(m.dayChange).toBe(50)
-    expect(m.dayChangePercent).toBeCloseTo(34.4827, 2)
+    expect(m.dayChangePercent).toBeCloseTo(3.448, 3) // per-share move, not × quantity
   })
 })
 
@@ -113,8 +114,8 @@ describe('calculatePortfolioRiskProfile', () => {
     const profile = calculatePortfolioRiskProfile(holdings, (symbol) => quotes[symbol] ?? null)
     expect(profile.score).toBe(40)
     expect(profile.level).toBe('moderatelyConservative')
-    expect(profile.cryptoPct).toBeCloseTo(6.25)
-    expect(profile.cashPct).toBeCloseTo(31.25)
+    expect(profile.cryptoPct).toBeCloseTo(100 / 12) // 100 of 1200
+    expect(profile.cashPct).toBeCloseTo(500 / 12) // 500 of 1200
   })
 
   it('returns conservative for an empty portfolio', () => {

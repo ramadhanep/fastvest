@@ -12,6 +12,7 @@ interface Preferences {
   fontFamily: FontPreference
   compactLayout: boolean
   locale: Locale
+  hideBalance: boolean
 }
 
 const preferences = ref<Preferences>({
@@ -21,6 +22,7 @@ const preferences = ref<Preferences>({
   fontFamily: 'serif',
   compactLayout: true,
   locale: 'en',
+  hideBalance: false,
 })
 const loaded = ref(false)
 
@@ -31,6 +33,7 @@ const DEFAULT_PREFERENCES: Preferences = {
   fontFamily: 'serif',
   compactLayout: true,
   locale: 'en',
+  hideBalance: false,
 }
 
 export function usePreferences() {
@@ -97,6 +100,11 @@ export function usePreferences() {
     applyTypography()
   }
 
+  function setHideBalance(hide: boolean) {
+    preferences.value.hideBalance = hide
+    persist()
+  }
+
   if (import.meta.client && !loaded.value) load()
   if (import.meta.client) applyTypography()
 
@@ -109,6 +117,7 @@ export function usePreferences() {
     setLocale,
     setFontFamily,
     setCompactLayout,
+    setHideBalance,
     applyTheme,
     applyTypography,
   }

@@ -25,11 +25,12 @@ export function calculateHoldingMetrics(holding: Holding, quote: Quote | null | 
   const prevClose = quote?.previousClose ?? quote?.price ?? 0
   const shareChange = quote?.change ?? (price > 0 && prevClose > 0 ? price - prevClose : 0)
   const dayChange = price === 0 ? 0 : holding.quantity * shareChange
+  // A percent move is per share — position size must not scale it.
   const dayChangePercent =
     quote?.changePercent !== undefined
-      ? holding.quantity * quote.changePercent
+      ? quote.changePercent
       : prevClose > 0
-        ? (dayChange / prevClose) * 100
+        ? (shareChange / prevClose) * 100
         : 0
   return {
     marketValue,
